@@ -15,9 +15,15 @@ docker pull manhinhang/futu-opend-docker
 
 ```
 docker run \
--v /bin/FutuOpenD.xml:$(pwd)/FutuOpenD.xml \
---p 11111:4002 \
+-v $(pwd)/FutuOpenD.xml:/bin/FutuOpenD.xml \
+--p 11111:11111 \
 futu-opend-docker
+```
+
+### Input 2FA code
+
+```
+input_phone_verify_code -code=<2FA_CODE>
 ```
 
 ## Build locally
