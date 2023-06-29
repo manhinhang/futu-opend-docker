@@ -18,7 +18,7 @@ docker run \
 -v $(pwd)/FutuOpenD.xml:/bin/FutuOpenD.xml \
 -v $(pwd)/futu.pem:<RSA_KEY_PATH_IN_XML> \
 --p 11111:11111 \
-futu-opend-docker
+manhinhang/futu-opend-docker
 ```
 
 ### Input 2FA code
