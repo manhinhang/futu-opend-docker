@@ -1,5 +1,8 @@
 # Futu OpenD Docker
 
+[![Docker Pulls](https://img.shields.io/docker/pulls/manhinhang/futu-opend-docker)](https://hub.docker.com/r/manhinhang/futu-opend-docker)
+[![GitHub](https://img.shields.io/github/license/manhinhang/futu-opend-docker)](https://github.com/manhinhang/futu-opend-docker/blob/main/LICENSE)
+
 lightweight futu opend docker
 
 ## Pull the docker image from docker hub
