@@ -3,14 +3,6 @@ name: Deploy to DockerHub
 on:
   workflow_dispatch:
     inputs:
-      base_img:
-        description: 'Base image'
-        required: true
-        default: 'ubuntu'
-        type: choice
-        options:
-          - ubuntu
-          - centos
       futu_opend_ver:
         description: 'Futu opend version'
         required: true
@@ -19,12 +11,15 @@ on:
 
 jobs:
   build:
+    strategy:
+      matrix:
+        BASE_IMG: [ubuntu, centos]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
       IMAGE_NAME: manhinhang/futu-opend-docker
       FUTU_OPEND_VER: ${{ inputs.futu_opend_ver }}
-      BASE_IMG: ${{ inputs.base_img }}
+      BASE_IMG: ${{ matrix.BASE_IMG }}
     steps:
       - uses: actions/checkout@master
       - name: inputs
@@ -44,4 +39,4 @@ jobs:
             "FUTU_OPEND_VER=${{ env.FUTU_OPEND_VER }}"
             "BASE_IMG=${{ env.BASE_IMG }}"
           tags:
-            ${{ env.IMAGE_NAME }}:${{ inputs.base_img }}-${{ env.FUTU_OPEND_VER }}
+            ${{ env.IMAGE_NAME }}:${{ env.BASE_IMG }}-${{ env.FUTU_OPEND_VER }}
