@@ -45,11 +45,11 @@ input_phone_verify_code -code=<2FA_CODE>
 
 Edit `.env`
 
-| Enviroment Variable | Description                |
-| ------------------- | -------------------------- |
-| RSA_FILE_PATH       | RSA file path in container |
-| RSA_FILE_LOCAL_PATH | RSA file local path        |
-|
+| Enviroment Variable       | Description                   |
+| ------------------------- | ----------------------------- |
+| RSA_FILE_PATH             | RSA file path in container    |
+| RSA_FILE_LOCAL_PATH       | RSA file local path           |
+| FUTU_OPEND_XML_LOCAL_PATH | FutuOpend XML local file path |
 
 ```bash
 sh script/update_futu_xml.sh $FUTU_ACCOUNT_ID $RSA_FILE_PATH $FUTU_ACCOUNT_PWD
