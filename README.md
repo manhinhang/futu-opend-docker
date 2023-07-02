@@ -14,7 +14,11 @@ docker pull manhinhang/futu-opend-docker
 
 ## Create a container from the image and run it
 
-| You need to create [FutuOpenD.xml](https://openapi.futunn.com/futu-api-doc/opend/opend-cmd.html) file
+> You need to create [FutuOpenD.xml](https://openapi.futunn.com/futu-api-doc/opend/opend-cmd.html) file
+> generate your own RSA key
+>> ```bash
+>> openssl genrsa -out futu.pem 1024
+>> ```
 
 ```bash
 docker run \
@@ -34,6 +38,28 @@ docker attach futu-opend-docker
 2. Input received SMS passcode
 
 ```
+input_phone_verify_code -code=<2FA_CODE>
+```
+
+## Run in docker compose
+
+Edit `.env`
+
+| Enviroment Variable | Description                |
+| ------------------- | -------------------------- |
+| RSA_FILE_PATH       | RSA file path in container |
+| RSA_FILE_LOCAL_PATH | RSA file local path        |
+|
+
+```bash
+sh script/update_futu_xml.sh $FUTU_ACCOUNT_ID $RSA_FILE_PATH $FUTU_ACCOUNT_PWD
+docker compose up -d
+```
+
+Then enter 2FA code
+
+```bash
+docker attach futu-opend
 input_phone_verify_code -code=<2FA_CODE>
 ```
 
