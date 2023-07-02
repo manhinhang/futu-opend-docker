@@ -1,6 +1,23 @@
 
 services:
-  app:
-    build:
-      context: .
-      target: final
+  futu-opend:
+    image: manhinhang/futu-opend-docker:ubuntu-7.1.3308
+    container_name: futu-opend
+    stdin_open: true
+    tty: true
+    volumes:
+      - futu-opend-volume:/root/.com.futunn.FutuOpenD
+    secrets:
+      - source: rsa-key
+        target: ${RSA_FILE_PATH}
+      - source: futu-opend-config
+        target: /bin/FutuOpenD.xml
+volumes:
+  futu-opend-volume:
+
+secrets:
+  rsa-key:
+    file: ${RSA_FILE_LOCAL_PATH}
+  futu-opend-config:
+    file: ${FUTU_OPEND_XML_LOCAL_PATH}
+  
