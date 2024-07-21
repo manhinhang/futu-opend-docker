@@ -20,11 +20,18 @@ docker pull manhinhang/futu-opend-docker
 >> openssl genrsa -out futu.pem 1024
 >> ```
 
+PEM file should config in xml
+```
+...
+<rsa_private_key>/bin/futu.pem</rsa_private_key>
+...
+```
+
 ```bash
-docker run \
+docker run -it \
 -v $(pwd)/FutuOpenD.xml:/bin/FutuOpenD.xml \
--v $(pwd)/futu.pem:<RSA_KEY_PATH_IN_XML> \
---p 11111:11111 \
+-v $(pwd)/futu.pem:/bin/futu.pem \
+-p 11111:11111 \
 manhinhang/futu-opend-docker
 ```
 
