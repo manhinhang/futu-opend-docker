@@ -13,6 +13,7 @@ RUN apt-get update
 RUN apt-get install -y curl 
 RUN apt install -y gnutls-bin
 COPY script/download_futu_opend.sh ./
+RUN chmod +x ./download_futu_opend.sh
 RUN ./download_futu_opend.sh Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu16.04.tar.gz
 RUN tar -xzf Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu16.04.tar.gz
 
@@ -22,6 +23,7 @@ ARG FUTU_OPEND_VER=8.2.4218
 USER root
 WORKDIR /tmp
 COPY script/download_futu_opend.sh ./
+RUN chmod +x ./download_futu_opend.sh
 RUN ./download_futu_opend.sh Futu_OpenD_${FUTU_OPEND_VER}_Centos7.tar.gz
 RUN tar -xzf Futu_OpenD_${FUTU_OPEND_VER}_Centos7.tar.gz
 
