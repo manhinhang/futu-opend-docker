@@ -2,34 +2,38 @@
 
 ARG BASE_IMG=ubuntu
 
-FROM ubuntu:16.04 as base-ubuntu
-FROM centos:centos7 as base-centos
+FROM ubuntu:16.04 AS base-ubuntu
+FROM centos:centos7 AS base-centos
 
-FROM base-ubuntu as build-ubuntu
-ARG FUTU_OPEND_VER=7.1.3308
-
-WORKDIR /tmp
-ADD https://softwaredownload.futunn.com/Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu16.04.tar.gz ./
-RUN tar -xzf Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu16.04.tar.gz \
- && rm Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu16.04.tar.gz
-
-FROM base-centos as build-centos
-ARG FUTU_OPEND_VER=7.1.3308
+FROM base-ubuntu AS build-ubuntu
+ARG FUTU_OPEND_VER=8.5.4508
 
 WORKDIR /tmp
-ADD https://softwaredownload.futunn.com/Futu_OpenD_${FUTU_OPEND_VER}_Centos7.tar.gz ./
-RUN tar -xzf Futu_OpenD_${FUTU_OPEND_VER}_Centos7.tar.gz \
- && rm Futu_OpenD_${FUTU_OPEND_VER}_Centos7.tar.gz
+RUN apt-get update
+RUN apt-get install -y curl 
+RUN apt install -y gnutls-bin
+COPY script/download_futu_opend.sh ./
+RUN ./download_futu_opend.sh Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu16.04.tar.gz
+RUN tar -xzf Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu16.04.tar.gz
+
+FROM base-centos AS build-centos
+ARG FUTU_OPEND_VER=8.2.4218
+
+USER root
+WORKDIR /tmp
+COPY script/download_futu_opend.sh ./
+RUN ./download_futu_opend.sh Futu_OpenD_${FUTU_OPEND_VER}_Centos7.tar.gz
+RUN tar -xzf Futu_OpenD_${FUTU_OPEND_VER}_Centos7.tar.gz
 
 FROM base-ubuntu AS final-ubuntu
-ARG FUTU_OPEND_VER=7.1.3308
+ARG FUTU_OPEND_VER=8.2.4218
 
 CMD ["/bin/FutuOpenD"]
 
 COPY --from=build-ubuntu /tmp/Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu16.04/Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu16.04 /bin
 
 FROM base-centos AS final-centos
-ARG FUTU_OPEND_VER=7.1.3308
+ARG FUTU_OPEND_VER=8.2.4218
 
 CMD ["/bin/FutuOpenD"]
 
