@@ -6,7 +6,7 @@ on:
       futu_opend_ver:
         description: 'Futu opend version'
         required: true
-        default: '7.1.3308'
+        default: '8.5.4508'
         type: string
 
 jobs:
