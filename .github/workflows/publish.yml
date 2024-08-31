@@ -1,0 +1,53 @@
+name: Publish Docker image
+
+on:
+  push:
+    branches:
+      - main
+      - feat/futu-opend-dockerÑversion-monitor
+
+jobs:
+  extract-version:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.result }}
+    steps:
+      - uses: actions/checkout@master
+      - name: get futu opend version
+        run: |
+          echo "BETA_VERSION=$(jq .beta_version opend_version.json)" >> $GITHUB_OUTPUT
+          echo "STABLE_VERSION=$(jq .stable_version opend_version.json)" >> $GITHUB_OUTPUT
+      - id: set-matrix
+        uses: actions/github-script@v6
+        with:
+          script: |
+            return {
+              "BASE_IMG": ["ubuntu", "centos"],
+              "FUTU_OPEND_VER": ["${{ steps.get_futu_opend_version.outputs.BETA_VERSION }}", "${{ steps.get_futu_opend_version.outputs.STABLE_VERSION }}"]
+            }
+
+  build:
+    strategy:
+      matrix:
+        ${{ fromJSON(needs.extract-version.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: extract-version
+    env:
+      IMAGE_NAME: manhinhang/futu-opend-docker
+    steps:
+      - uses: actions/checkout@master
+      - name: Docker login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_CLIENT_ID }}
+          password: ${{ secrets.DOCKERHUB_CLIENT_SECRET }}
+      - name: build-push
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          build-args: |
+            "FUTU_OPEND_VER=${{ matrix.FUTU_OPEND_VER }}"
+            "BASE_IMG=${{ matrix.BASE_IMG }}"
+          tags:
+            ${{ matrix.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ matrix.FUTU_OPEND_VER }}

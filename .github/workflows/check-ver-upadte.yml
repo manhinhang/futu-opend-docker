@@ -1,0 +1,36 @@
+# This workflow is used to check if there is a new version of Futu OpenD
+# and update the version in the Dockerfile
+
+name: Check Futu OpenD Version Update
+
+on: 
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install node
+        uses: actions/setup-node@v2
+      - name: Install dependencies
+        run: |
+          npm install
+      - name: Check Futu OpenD Version
+        run: |
+          node script/check_version.js
+      - name: Commit and push
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add opend_version.json
+          if ! git diff --cached --quiet; then
+            git checkout -b update-futu-opend-version
+            git commit -m "Update Futu OpenD version"
+            git push
+          fi
