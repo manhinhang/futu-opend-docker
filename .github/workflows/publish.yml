@@ -55,13 +55,17 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_CLIENT_ID }}
           password: ${{ secrets.DOCKERHUB_CLIENT_SECRET }}
-      - name: Tag suffix
-        run: |
-          if [ "${{ matrix.FUTU_OPEND_VER }}" == "${{ env.BETA_VERSION }}" ]; then
-            echo "result=beta" >> $GITHUB_OUTPUT
-          else
-            echo "result=stable" >> $GITHUB_OUTPUT
-          fi
+      - name: set-tag-suffix
+        id: tag_suffix
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            if ("${{ matrix.FUTU_OPEND_VER }}" === "${{ env.BETA_VERSION }}") { 
+              return "beta"
+            } else {
+              return "stable"
+            }
       - name: build-push
         uses: docker/build-push-action@v5
         with:
@@ -71,4 +75,5 @@ jobs:
             "BASE_IMG=${{ matrix.BASE_IMG }}"
           tags:
             ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ matrix.FUTU_OPEND_VER }}
-            # ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ steps.tag_suffix.outputs.result }}
+            ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ steps.tag_suffix.outputs.result }}
+
