@@ -58,9 +58,9 @@ jobs:
       - name: Tag suffix
         run: |
           if [ "${{ matrix.FUTU_OPEND_VER }}" == "${{ env.BETA_VERSION }}" ]; then
-            echo "tag_suffix=beta" >> $GITHUB_OUTPUT
+            echo "result=beta" >> $GITHUB_OUTPUT
           else
-            echo "tag_suffix=stable" >> $GITHUB_OUTPUT
+            echo "result=stable" >> $GITHUB_OUTPUT
           fi
       - name: build-push
         uses: docker/build-push-action@v5
@@ -71,4 +71,4 @@ jobs:
             "BASE_IMG=${{ matrix.BASE_IMG }}"
           tags:
             ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ matrix.FUTU_OPEND_VER }}
-            # ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ steps.tag_suffix.outputs.tag_suffix }}
+            # ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ steps.tag_suffix.outputs.result }}
