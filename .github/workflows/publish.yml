@@ -73,7 +73,7 @@ jobs:
           build-args: |
             "FUTU_OPEND_VER=${{ matrix.FUTU_OPEND_VER }}"
             "BASE_IMG=${{ matrix.BASE_IMG }}"
-          tags:
+          tags: |
             ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ matrix.FUTU_OPEND_VER }}
             ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ steps.tag_suffix.outputs.result }}
 
