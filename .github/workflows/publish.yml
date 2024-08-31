@@ -4,26 +4,37 @@ on:
   push:
     branches:
       - main
-      - feat/futu-opend-dockerÑversion-monitor
 
 jobs:
   extract-version:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.result }}
+      beta_version: ${{ steps.beta_version.outputs.result }}
+      stable_version: ${{ steps.stable_version.outputs.result }}
     steps:
       - uses: actions/checkout@master
-      - name: get futu opend version
-        run: |
-          echo "BETA_VERSION=$(jq .beta_version opend_version.json)" >> $GITHUB_OUTPUT
-          echo "STABLE_VERSION=$(jq .stable_version opend_version.json)" >> $GITHUB_OUTPUT
+      - uses: actions/github-script@v7
+        id: beta_version
+        with:
+          script: |
+            const config = require('./opend_version.json');
+            return config.beta_version;
+          result-encoding: string
+      - uses: actions/github-script@v7
+        id: stable_version
+        with:
+          script: |
+            const config = require('./opend_version.json');
+            return config.stable_version;
+          result-encoding: string  
       - id: set-matrix
         uses: actions/github-script@v6
         with:
           script: |
             return {
               "BASE_IMG": ["ubuntu", "centos"],
-              "FUTU_OPEND_VER": ["${{ steps.get_futu_opend_version.outputs.BETA_VERSION }}", "${{ steps.get_futu_opend_version.outputs.STABLE_VERSION }}"]
+              "FUTU_OPEND_VER": ["${{ steps.beta_version.outputs.result }}", "${{ steps.stable_version.outputs.result }}"]
             }
 
   build:
@@ -35,19 +46,29 @@ jobs:
     needs: extract-version
     env:
       IMAGE_NAME: manhinhang/futu-opend-docker
+      BETA_VERSION: ${{ needs.extract-version.outputs.beta_version }}
+      STABLE_VERSION: ${{ needs.extract-version.outputs.stable_version }}
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v4
       - name: Docker login
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_CLIENT_ID }}
           password: ${{ secrets.DOCKERHUB_CLIENT_SECRET }}
+      - name: Tag suffix
+        run: |
+          if [ "${{ matrix.FUTU_OPEND_VER }}" == "${{ env.BETA_VERSION }}" ]; then
+            echo "beta" > $GITHUB_OUTPUT
+          else
+            echo "stable" > $GITHUB_OUTPUT
+          fi
       - name: build-push
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           push: true
           build-args: |
             "FUTU_OPEND_VER=${{ matrix.FUTU_OPEND_VER }}"
             "BASE_IMG=${{ matrix.BASE_IMG }}"
           tags:
-            ${{ matrix.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ matrix.FUTU_OPEND_VER }}
+            ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ matrix.FUTU_OPEND_VER }}
+            ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ steps.tag_suffix.outputs.result }}

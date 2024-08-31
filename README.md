@@ -9,8 +9,20 @@ lightweight futu opend docker
 
 ```
 # default base image is ubuntu
-docker pull manhinhang/futu-opend-docker
+docker pull manhinhang/futu-opend-docker:ubuntu-stable
 ```
+
+## container tags pattern
+
+| Base Image | Tags                   |
+| ---------- | ---------------------- |
+| ubuntu     | ubuntu-stable          |
+| ubuntu     | ubuntu-beta            |
+| ubuntu     | ubuntu-{opend_version} |
+| centos     | centos-stable          |
+| centos     | centos-beta            |
+| centos     | centos-{opend_version} |
+
 
 ## Create a container from the image and run it
 
