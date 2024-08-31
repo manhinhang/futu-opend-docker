@@ -58,9 +58,9 @@ jobs:
       - name: Tag suffix
         run: |
           if [ "${{ matrix.FUTU_OPEND_VER }}" == "${{ env.BETA_VERSION }}" ]; then
-            echo "beta" > $GITHUB_OUTPUT
+            echo "beta" >> $GITHUB_OUTPUT
           else
-            echo "stable" > $GITHUB_OUTPUT
+            echo "stable" >> $GITHUB_OUTPUT
           fi
       - name: build-push
         uses: docker/build-push-action@v5
