@@ -71,4 +71,4 @@ jobs:
             "BASE_IMG=${{ matrix.BASE_IMG }}"
           tags:
             ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ matrix.FUTU_OPEND_VER }}
-            ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ steps.tag_suffix.outputs.tag_suffix }}
+            # ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ steps.tag_suffix.outputs.tag_suffix }}
