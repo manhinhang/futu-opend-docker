@@ -13,19 +13,23 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.result }}
     steps:
       - uses: actions/checkout@master
-      - name: get futu opend version
-        run: |
-          BETA_VERSION=$(jq .beta_version opend_version.json)
-          STABLE_VERSION=$(jq .stable_version opend_version.json)
-          echo "BETA_VERSION=${BETA_VERSION}" >> $GITHUB_OUTPUT
-          echo "STABLE_VERSION=${STABLE_VERSION}" >> $GITHUB_OUTPUT
+      - uses: actions/github-script@v7
+        id: beta_version
+        with:
+          script: return $(jq .beta_version opend_version.json)
+          result-encoding: string
+      - uses: actions/github-script@v7
+        id: stable_version
+        with:
+          script: return $(jq .beta_version opend_version.json)
+          result-encoding: string  
       - id: set-matrix
         uses: actions/github-script@v6
         with:
           script: |
             return {
               "BASE_IMG": ["ubuntu", "centos"],
-              "FUTU_OPEND_VER": ["${{ steps.get_futu_opend_version.outputs.BETA_VERSION }}", "${{ steps.get_futu_opend_version.outputs.STABLE_VERSION }}"]
+              "FUTU_OPEND_VER": ["${{ steps.beta_version.outputs.result }}", "${{ steps.stable_version.outputs.result }}"]
             }
 
   build:
