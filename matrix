@@ -1,0 +1,10 @@
+{
+    "platform": [
+        "ubuntu",
+        "centos"
+    ],
+    "opend_version": [
+        "7.1.3308",
+        "7.1.3309"
+    ]
+}
