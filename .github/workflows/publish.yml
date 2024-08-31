@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - feat/futu-opend-dockerÑversion-monitor
+      - feat/monitor-opend-ver-change
 
 jobs:
   extract-version:
