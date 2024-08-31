@@ -32,5 +32,8 @@ jobs:
           if ! git diff --cached --quiet; then
             git checkout -b update-futu-opend-version
             git commit -m "Update Futu OpenD version"
-            git push
+            git push --set-upstream origin update-futu-opend-version
+
+            # create a pull request
+            gh pr create --title "Update Futu OpenD version" --body "Update Futu OpenD version"
           fi
