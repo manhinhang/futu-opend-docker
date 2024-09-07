@@ -64,14 +64,13 @@ input_phone_verify_code -code=<2FA_CODE>
 
 Edit `.env`
 
-| Enviroment Variable       | Description                   |
-| ------------------------- | ----------------------------- |
-| RSA_FILE_PATH             | RSA file path in container    |
-| RSA_FILE_LOCAL_PATH       | RSA file local path           |
-| FUTU_OPEND_XML_LOCAL_PATH | FutuOpend XML local file path |
+| Enviroment Variable       | Description                     |
+| ------------------------- | ------------------------------- |
+| FUTU_ACCOUNT_ID           | Futu account id                 |
+| FUTU_ACCOUNT_PWD          | Futu account password           |
+| FUTU_RSA_FILE_PATH        | Futu RSA file path in container |
 
 ```bash
-sh script/update_futu_xml.sh $FUTU_ACCOUNT_ID $RSA_FILE_PATH $FUTU_ACCOUNT_PWD
 docker compose up -d
 ```
 

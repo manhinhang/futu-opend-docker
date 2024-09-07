@@ -9,10 +9,10 @@
 		<api_port>11111</api_port>
 		<!-- 登录帐号 -->
 		<!-- Login account -->
-		<login_account></login_account>
+		<login_account>###FUTU_ACCOUNT_ID###</login_account>
 		<!-- 登录密码32位MD5加密16进制 -->
 		<!-- Login password, 32-bit MD5 encrypted hexadecimal --> 
-		<login_pwd_md5></login_pwd_md5>
+		<login_pwd_md5>###FUTU_ACCOUNT_PWD_MD5###</login_pwd_md5>
 		<!-- 登录密码明文，密码密文存在情况下只使用密文 -->
 		<!-- Plain text of login password. When cypher text exists, the cypher text will be used. --> 
 		<!-- <login_pwd>1e4331fb45089b3a520d136cb3114c6e</login_pwd> -->
@@ -38,7 +38,7 @@
 		<!-- <telnet_port>22222</telnet_port> -->
 		<!-- API协议加密私钥文件路径,不设置则不加密 -->
 		<!-- File path for private key for API protocol enctyption. If not set, it will not be encrypted. -->
-		<rsa_private_key></rsa_private_key>
+		<rsa_private_key>###FUTU_OPEND_RSA_FILE_PATH###</rsa_private_key>
 		<!-- 是否接收到价提醒推送，0：不接收，1：接收 -->
 		<!-- Whether to receive the price reminder push. 0: not receive, 1: receive -->
 		<price_reminder_push>1</price_reminder_push>
