@@ -69,6 +69,8 @@ Edit `.env`
 | FUTU_ACCOUNT_ID           | Futu account id                 |
 | FUTU_ACCOUNT_PWD          | Futu account password           |
 | FUTU_RSA_FILE_PATH        | Futu RSA file path in container |
+| FUTU_OPEND_IP             | Futu OpenD IP in container      |
+| FUTU_OPEND_PORT           | Futu OpenD Port in container    |
 
 ```bash
 docker compose up -d
