@@ -50,6 +50,7 @@ ENV FUTU_ACCOUNT_PWD=
 ENV FUTU_OPEND_RSA_FILE_PATH=/.futu/futu.pem
 ENV FUTU_OPEND_IP=127.0.0.1
 ENV FUTU_OPEND_PORT=11111
+ENV FUTU_OPEND_TELNET_PORT=22222
 
 COPY script/start.sh /bin/start.sh
 RUN chmod +x /bin/start.sh
