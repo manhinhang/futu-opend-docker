@@ -37,7 +37,7 @@ jobs:
         with:
           script: |
             return {
-              "BASE_IMG": ["ubuntu", "centos"],
+              "BASE_IMG": ["ubuntu"],
               "FUTU_OPEND_VER": ["${{ steps.beta_version.outputs.result }}", "${{ steps.stable_version.outputs.result }}"]
             }
 
@@ -78,6 +78,6 @@ jobs:
             "FUTU_OPEND_VER=${{ matrix.FUTU_OPEND_VER }}"
             "BASE_IMG=${{ matrix.BASE_IMG }}"
           tags: |
-            ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ matrix.FUTU_OPEND_VER }}
-            ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ steps.tag_suffix.outputs.result }}
+            ghcr.io/wuganhao/${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ matrix.FUTU_OPEND_VER }}
+            ghcr.io/wuganhao/${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ steps.tag_suffix.outputs.result }}
 
