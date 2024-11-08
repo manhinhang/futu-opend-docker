@@ -57,5 +57,9 @@ RUN chmod +x /bin/start.sh
 
 COPY FutuOpenD.xml /bin/FutuOpenD.xml
 
+LABEL org.opencontainers.image.source=https://github.com/wuganhao/futu-opend-docker
+LABEL org.opencontainers.image.description="Futu OpenD Service Image"
+LABEL org.opencontainers.image.licenses=MIT
+
 CMD ["/bin/start.sh"]
 
