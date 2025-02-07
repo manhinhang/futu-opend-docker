@@ -12,11 +12,11 @@ async function load_document() {
 }
 
 function get_beta_version(document) {
-    return document.querySelector("ul[data-type='opend'] > li.clearfix > div.version-number > p.version-name > span.new-icon").parentNode.querySelector("span").textContent.replace("Ver.", "")
+    return document.querySelector("div.version-number > p.version-name > span.new-icon").parentNode.querySelector("span").textContent.replace("Ver.", "")
 }
 
 function get_all_version(document) {
-    return Array.prototype.map.call(document.querySelectorAll("ul[data-type='opend'] > li.clearfix > div.version-number > p.version-name > span:nth-child(1)"), (x) => x.textContent.replace("Ver.", ""))
+    return Array.prototype.map.call(document.querySelectorAll("div.version-number > p.version-name > span:nth-child(1)"), (x) => x.textContent.replace("Ver.", ""))
 }
 
 async function main() {
