@@ -15,7 +15,6 @@ jobs:
       pull-requests: write
       contents: write
       issues: write
-      workflows: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
