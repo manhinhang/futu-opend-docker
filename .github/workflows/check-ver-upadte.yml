@@ -36,13 +36,14 @@ jobs:
           if ! git diff --cached --quiet; then
             # 关闭已存在的 PR
             gh pr list --search "Update Futu OpenD version" --json number --jq '.[].number' | xargs -I {} gh pr close {}
-            # 删除已存在的分支
-            git branch -a | grep "update-futu-opend-version" | xargs -I {} git push origin --delete {}
             
             # 创建新分支并提交更改
             git checkout -b update-futu-opend-version
             git commit -m "Update Futu OpenD version"
-            git push --set-upstream origin update-futu-opend-version
+            # 先拉取远程更改
+            git pull origin update-futu-opend-version --allow-unrelated-histories || true
+            # 强制推送更改
+            git push -f --set-upstream origin update-futu-opend-version
 
             # 创建新的 PR
             gh pr create --title "Update Futu OpenD version" --body "Update Futu OpenD version"
