@@ -12,11 +12,15 @@ async function load_document() {
 }
 
 function get_beta_version(document) {
-    return document.querySelector("div.version-number > p.version-name > span.new-icon").parentNode.querySelector("span").textContent.replace("Ver.", "")
+    const betaElement = document.querySelector("div.version-number > p.version-name > span.new-icon");
+    if (!betaElement) return null;
+    return betaElement.parentNode.querySelector("span.version").textContent.replace("Ver.", "").trim();
 }
 
 function get_all_version(document) {
-    return Array.prototype.map.call(document.querySelectorAll("div.version-number > p.version-name > span:nth-child(1)"), (x) => x.textContent.replace("Ver.", ""))
+    return Array.prototype.map.call(document.querySelectorAll("div.version-number > p.version-name > span.version"), 
+        (x) => x.textContent.replace("Ver.", "").trim()
+    );
 }
 
 async function main() {
