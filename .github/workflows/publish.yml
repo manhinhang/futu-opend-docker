@@ -36,9 +36,14 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const betaVersion = "${{ steps.beta_version.outputs.result }}";
+            const versions = ["${{ steps.stable_version.outputs.result }}"];
+            if (betaVersion !== "null") {
+              versions.unshift(betaVersion);
+            }
             return {
               "BASE_IMG": ["ubuntu", "centos"],
-              "FUTU_OPEND_VER": ["${{ steps.beta_version.outputs.result }}", "${{ steps.stable_version.outputs.result }}"]
+              "FUTU_OPEND_VER": versions
             }
 
   build:
