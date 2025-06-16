@@ -33,6 +33,8 @@ jobs:
           if ! git diff --cached --quiet; then
             # 关闭已存在的 PR
             gh pr list --search "Update Futu OpenD version" --json number --jq '.[].number' | xargs -I {} gh pr close {}
+            # 删除已存在的分支
+            git branch -a | grep "update-futu-opend-version" | xargs -I {} git push origin --delete {}
             
             # 创建新分支并提交更改
             git checkout -b update-futu-opend-version
