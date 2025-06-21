@@ -1,6 +1,5 @@
-# /usr/bin/env bash
+#! /usr/bin/env bash
 
-# curl 'https://hkpublic.futuhk.com/download/download-link?file=Futu_OpenD_8.5.4518_Centos7.tar.gz'
 URL=https://softwaredownload.futunn.com/$1
 echo "downloading '${URL}'"
 curl "${URL}" \
@@ -16,4 +15,4 @@ curl "${URL}" \
 	-H 'sec-fetch-user: ?1' \
 	-H 'upgrade-insecure-requests: 1' \
 	-H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0' \
-	-o $1
+	-o "$1"
