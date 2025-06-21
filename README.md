@@ -7,7 +7,7 @@ lightweight futu opend docker
 
 ## Pull the docker image from GitHub Container Registry
 
-```
+```bash
 # default base image is ubuntu
 docker pull ghcr.io/manhinhang/futu-opend-docker:ubuntu-stable
 ```
@@ -58,7 +58,7 @@ docker attach futu-opend-docker
 
 2. Input received SMS passcode
 
-```
+```bash
 input_phone_verify_code -code=<2FA_CODE>
 ```
 
@@ -89,13 +89,13 @@ input_phone_verify_code -code=<2FA_CODE>
 
 - Use ubuntu as base image
 
-```
+```bash
 docker build -t futu-opend-docker --build-arg FUTU_OPEND_VER=7.1.3308 --build-arg BASE_IMG=ubuntu .
 ```
 
 - Use centos as base image
 
-```
+```bash
 docker build -t futu-opend-docker --build-arg FUTU_OPEND_VER=7.1.3308 --build-arg BASE_IMG=centos .
 ```
 

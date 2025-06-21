@@ -11,7 +11,7 @@ ARG FUTU_OPEND_VER=8.5.4508
 WORKDIR /tmp
 RUN apt-get update
 RUN apt-get install -y curl 
-RUN apt install -y gnutls-bin
+RUN apt-get install -y gnutls-bin
 COPY script/download_futu_opend.sh ./
 RUN chmod +x ./download_futu_opend.sh
 RUN ./download_futu_opend.sh Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu16.04.tar.gz
@@ -52,10 +52,24 @@ ENV FUTU_OPEND_IP=127.0.0.1
 ENV FUTU_OPEND_PORT=11111
 ENV FUTU_OPEND_TELNET_PORT=22222
 
+# Create non-root user
+RUN groupadd -r futu && useradd -r -g futu futu
+
+# Create necessary directories and set permissions
+RUN mkdir -p /.futu /bin && chown -R futu:futu /.futu /bin
+
 COPY script/start.sh /bin/start.sh
-RUN chmod +x /bin/start.sh
+RUN chmod +x /bin/start.sh && chown futu:futu /bin/start.sh
 
 COPY FutuOpenD.xml /bin/FutuOpenD.xml
+RUN chown futu:futu /bin/FutuOpenD.xml
+
+# Switch to non-root user
+USER futu
+
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=600s --start-period=180s --retries=3 \
+  CMD pgrep FutuOpenD || exit 1
 
 CMD ["/bin/start.sh"]
 
