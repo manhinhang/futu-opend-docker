@@ -25,13 +25,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTE_API_KEY }}
           OPENROUTER_BASE_URL: https://openrouter.ai/api/v1
-        with:
-          args: |
-            --mode=review
-            --review_comment_lgtm=false
-            --model=openrouter/deepseek/deepseek-r1-0528-qwen3-8b:free
-            --enable_synchronize=true
-            --force_review=true
-            --skip_if_no_changes=false
-            --verbose=true
-            # --path_filters="**/*.py,**/*.js,**/*.ts,**/*.yml,**/*.yaml,**/*.json,**/*.md,**/*.dockerfile,**/Dockerfile"
+        # with:
+        #   args: |
+        #     --mode=review
+        #     --review_comment_lgtm=false
+        #     --model=openrouter/deepseek/deepseek-r1-0528-qwen3-8b:free
+        #     --enable_synchronize=true
+        #     --force_review=true
+        #     --skip_if_no_changes=false
+        #     --verbose=true
+        #     # --path_filters="**/*.py,**/*.js,**/*.ts,**/*.yml,**/*.yaml,**/*.json,**/*.md,**/*.dockerfile,**/Dockerfile"
