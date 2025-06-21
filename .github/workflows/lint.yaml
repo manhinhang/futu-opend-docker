@@ -49,6 +49,9 @@ jobs:
                   else
                       echo "has_changes=false" >> "$GITHUB_OUTPUT"
                   fi
+            - name: Show workflow lint result
+              run: |
+                  git diff .github/workflows/
 
             - name: Create Pull Request
               if: steps.check_changes.outputs.has_changes == 'true'
