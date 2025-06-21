@@ -4,15 +4,17 @@ on: # yamllint disable-line rule:truthy
     push: null
     pull_request: null
 
-permissions: {}
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
     lint:
         name: Lint
         runs-on: ubuntu-latest
         permissions:
-            contents: read
-            packages: read
+            contents: write
+            pull-requests: write
             # To report GitHub Actions status checks
             statuses: write
 
@@ -34,19 +36,18 @@ jobs:
             AUTO_FIX: true
             # Linter rules path (optional)
             LINTER_RULES_PATH: .github/linters
+
         - name: Check for changes
           id: check_changes
-          continue-on-error: true
           run: |
-              if [[ -n "$(git status --porcelain)" ]]; then
+            if [[ -n "$(git status --porcelain)" ]]; then
               echo "has_changes=true" >> $GITHUB_OUTPUT
-              else
+            else
               echo "has_changes=false" >> $GITHUB_OUTPUT
-              fi
+            fi
           
         - name: Create Pull Request
           if: steps.check_changes.outputs.has_changes == 'true'
-          continue-on-error: true
           env:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           run: |
