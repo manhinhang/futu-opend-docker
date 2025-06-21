@@ -1,6 +1,5 @@
 {
   "ignore": [
-    "package-lock.json",
     "**/package-lock.json",
     "**/yarn.lock",
     "**/pnpm-lock.yaml",
