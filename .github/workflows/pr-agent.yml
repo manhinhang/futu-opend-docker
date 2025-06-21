@@ -30,4 +30,5 @@ jobs:
             --review_comment_lgtm=false
             --model=deepseek/deepseek-r1-0528-qwen3-8b:free
             --enable_synchronize=true
+            --force_review=true
             --path_filters="**/*.py,**/*.js,**/*.ts,**/*.yml,**/*.yaml,**/*.json,**/*.md,**/*.dockerfile,**/Dockerfile" 
