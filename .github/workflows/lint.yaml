@@ -45,7 +45,7 @@ jobs:
           FIX_JSON_PRETTIER: true
           FIX_JSON: true
           FIX_ENV: true
-          FILTER_REGEX_EXCLUDE: package-lock.json
+          FILTER_REGEX_EXCLUDE: "**/*package-lock.json*"
 
       - name: Check for changes
         id: check_changes
