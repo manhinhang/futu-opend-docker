@@ -1,0 +1,20 @@
+# Super-Linter configuration file
+# https://github.com/github/super-linter
+
+# Ignore files and directories
+IGNORE_FILES:
+  - package-lock.json
+  - yarn.lock
+  - pnpm-lock.yaml
+
+# Ignore generated files
+IGNORE_GENERATED_FILES: true
+
+# Ignore specific file extensions
+IGNORE_FILE_EXTENSIONS:
+  - .lock
+
+# Optional: Disable specific linters if needed
+# DISABLE:
+#   - JAVASCRIPT_ES
+#   - JAVASCRIPT_STANDARD 
