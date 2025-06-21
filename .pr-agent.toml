@@ -1,0 +1,37 @@
+[pr-agent]
+# 使用中文回复
+language = "zh"
+
+[pr-agent.prompts]
+# 自定义PR评论提示
+review_prompt = """
+请以中文回复，对以下PR进行代码审查：
+
+1. 代码质量和最佳实践
+2. 潜在的安全问题
+3. 性能优化建议
+4. 可读性和维护性
+5. 测试覆盖建议
+
+请提供具体、有建设性的反馈。
+"""
+
+[pr-agent.review]
+# 评论设置
+comment_lgtm = false
+enable_auto_approval = false
+enable_auto_merge = false
+
+[pr-agent.path_filters]
+# 文件类型过滤
+include_patterns = [
+    "**/*.py",
+    "**/*.js", 
+    "**/*.ts",
+    "**/*.yml",
+    "**/*.yaml",
+    "**/*.json",
+    "**/*.md",
+    "**/*.dockerfile",
+    "**/Dockerfile"
+] 
