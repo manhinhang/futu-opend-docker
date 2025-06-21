@@ -35,7 +35,7 @@ jobs:
           script: |
             const config = require('./opend_version.json');
             return config.stable_version;
-          result-encoding: string  
+          result-encoding: string
       - id: set-matrix
         uses: actions/github-script@v7
         with:
@@ -43,17 +43,16 @@ jobs:
             const betaVersion = "${{ steps.beta_version.outputs.result }}";
             const versions = ["${{ steps.stable_version.outputs.result }}"];
             if (betaVersion !== "null") {
-              versions.unshift(betaVersion);
+                versions.unshift(betaVersion);
             }
             return {
-              "BASE_IMG": ["ubuntu", "centos"],
-              "FUTU_OPEND_VER": versions
-            }
+                "BASE_IMG": ["ubuntu", "centos"],
+                "FUTU_OPEND_VER": versions
+            };
 
   build:
     strategy:
-      matrix:
-        ${{ fromJSON(needs.extract-version.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.extract-version.outputs.matrix) }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: extract-version
@@ -64,7 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Docker login
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -75,19 +74,19 @@ jobs:
         with:
           result-encoding: string
           script: |
-            if ("${{ matrix.FUTU_OPEND_VER }}" === "${{ env.BETA_VERSION }}") { 
-              return "beta"
+            if ("${{ matrix.FUTU_OPEND_VER }}" === "${{ env.BETA_VERSION }}") {
+                return "beta";
             } else {
-              return "stable"
+                return "stable";
             }
       - name: build-push
         uses: docker/build-push-action@v5
         with:
           push: true
+          target: final-${{ matrix.BASE_IMG }}-target
           build-args: |
             "FUTU_OPEND_VER=${{ matrix.FUTU_OPEND_VER }}"
             "BASE_IMG=${{ matrix.BASE_IMG }}"
           tags: |
             ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ matrix.FUTU_OPEND_VER }}
             ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ steps.tag_suffix.outputs.result }}
-

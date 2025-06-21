@@ -1,0 +1,16 @@
+{
+  "ignore": [
+    "**/package-lock.json",
+    "**/yarn.lock",
+    "**/pnpm-lock.yaml",
+    "**/node_modules/**",
+    "**/*.lock",
+    "**/dist/**",
+    "**/build/**",
+    "**/.git/**",
+    "**/.github/**"
+  ],
+  "threshold": 5,
+  "reporters": ["console", "html", "json"],
+  "ignorePatterns": ["*.lock", "*.min.js", "*.bundle.js"]
+}

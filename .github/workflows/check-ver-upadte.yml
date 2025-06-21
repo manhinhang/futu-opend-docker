@@ -3,48 +3,71 @@
 
 name: Check Futu OpenD Version Update
 
-on: 
+on:
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch:
 
+permissions:
+  pull-requests: read
+  contents: read
+  issues: read
+
 jobs:
   check-version:
+    name: Check Version
     runs-on: ubuntu-latest
+    # Note: contents: write permission is required to push code changes and create PRs
+    # This is a legitimate use case for automated version updates
     permissions:
       pull-requests: write
       contents: write
       issues: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+
       - name: Install node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
       - name: Install dependencies
         run: |
-          npm install
+          npm ci
+
       - name: Check Futu OpenD Version
         run: |
           node script/check_version.js
-      - name: Commit and push
+
+      - name: Create Pull Request if needed
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add opend_version.json
-          if ! git diff --cached --quiet; then
-            # 关闭已存在的 PR
-            gh pr list --search "Update Futu OpenD version" --json number --jq '.[].number' | xargs -I {} gh pr close {}
-            
-            # 创建新分支并提交更改
-            git checkout -b update-futu-opend-version
-            git commit -m "Update Futu OpenD version"
-            # 先拉取远程更改
-            git pull origin update-futu-opend-version --allow-unrelated-histories || true
-            # 强制推送更改
-            git push -f --set-upstream origin update-futu-opend-version
-
-            # 创建新的 PR
-            gh pr create --title "Update Futu OpenD version" --body "Update Futu OpenD version"
+          if [ -f opend_version.json ] && [ -s opend_version.json ]; then
+            # 检查是否有新的版本更新
+            if git diff --quiet opend_version.json; then
+              echo "No version update needed"
+            else
+              # 创建新分支并提交更改
+              git config --global user.name "github-actions[bot]"
+              git config --global user.email "github-actions[bot]@users.noreply.github.com"
+              
+              # 关闭已存在的 PR
+              gh pr list --search "Update Futu OpenD version" --json number --jq ".[].number" | xargs -I {} gh pr close {} || true
+              
+              # 创建新分支
+              git checkout -b update-futu-opend-version
+              git add opend_version.json
+              git commit -m "Update Futu OpenD version"
+              
+              # 推送更改
+              git push origin update-futu-opend-version
+              
+              # 创建新的 PR
+              gh pr create --title "Update Futu OpenD version" --body "Update Futu OpenD version"
+            fi
+          else
+            echo "No version file found or file is empty"
           fi
