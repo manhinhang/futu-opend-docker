@@ -5,12 +5,12 @@ const path = require('path')
 
 const url = 'https://www.futunn.com/en/download/OpenAPI'
 
-async function load_document () {
+async function loadDocument () {
   const dom = await JSDOM.fromURL(url)
   return dom.window.document
 }
 
-function get_beta_version (document) {
+function getBetaVersion (document) {
   const betaElement = document.querySelector(
     'div.version-number > p.version-name > span.new-icon'
   )
@@ -21,7 +21,7 @@ function get_beta_version (document) {
     .trim()
 }
 
-function get_all_version (document) {
+function getAllVersion (document) {
   return Array.prototype.map.call(
     document.querySelectorAll(
       'div.version-number > p.version-name > span.version'
@@ -31,17 +31,17 @@ function get_all_version (document) {
 }
 
 async function main () {
-  const document = await load_document()
-  const beta_version = get_beta_version(document)
-  const all_version = get_all_version(document)
-  const stable_version_list = all_version.filter((x) => x !== beta_version)
-  const stable_version = stable_version_list[0]
-  console.log('beta version: ' + beta_version)
-  console.log('stable version list: ' + stable_version_list)
-  console.log('stable version: ' + stable_version)
+  const document = await loadDocument()
+  const betaVersion = getBetaVersion(document)
+  const allVersion = getAllVersion(document)
+  const stableVersionList = allVersion.filter((x) => x !== betaVersion)
+  const stableVersion = stableVersionList[0]
+  console.log('beta version: ' + betaVersion)
+  console.log('stable version list: ' + stableVersionList)
+  console.log('stable version: ' + stableVersion)
   const data = {
-    beta_version,
-    stable_version
+    betaVersion,
+    stableVersion
   }
   console.log(data)
 
