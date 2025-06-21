@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   pr-agent:
     runs-on: ubuntu-latest
@@ -17,18 +21,13 @@ jobs:
         uses: Codium-ai/pr-agent@main
         env:
           OPENAI_API_KEY: ${{ secrets.OPENROUTE_API_KEY }}
-          OPENAI_API_BASE: https://openroute.ai/api/v1
+          OPENAI_KEY: ${{ secrets.OPENROUTE_API_KEY }}
+          OPENAI_API_BASE: https://openrouter.ai/api/v1
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          mode: review
-          review_comment_lgtm: false
-          path_filters: |
-            **/*.py
-            **/*.js
-            **/*.ts
-            **/*.yml
-            **/*.yaml
-            **/*.json
-            **/*.md
-            **/*.dockerfile
-            **/Dockerfile 
+          args: |
+            --mode=review
+            --review_comment_lgtm=false
+            --model=deepseek/deepseek-r1-0528-qwen3-8b:free
+            --enable_synchronize=true
+            --path_filters="**/*.py,**/*.js,**/*.ts,**/*.yml,**/*.yaml,**/*.json,**/*.md,**/*.dockerfile,**/Dockerfile" 
