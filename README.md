@@ -1,15 +1,15 @@
 # Futu OpenD Docker
 
-[![Docker Pulls](https://img.shields.io/docker/pulls/manhinhang/futu-opend-docker)](https://hub.docker.com/r/manhinhang/futu-opend-docker)
+[![Docker Pulls](https://img.shields.io/github/package-json/v/manhinhang/futu-opend-docker)](https://github.com/manhinhang/futu-opend-docker/packages)
 [![GitHub](https://img.shields.io/github/license/manhinhang/futu-opend-docker)](https://github.com/manhinhang/futu-opend-docker/blob/main/LICENSE)
 
 lightweight futu opend docker
 
-## Pull the docker image from docker hub
+## Pull the docker image from GitHub Container Registry
 
 ```
 # default base image is ubuntu
-docker pull manhinhang/futu-opend-docker:ubuntu-stable
+docker pull ghcr.io/manhinhang/futu-opend-docker:ubuntu-stable
 ```
 
 ## container tags pattern
@@ -44,7 +44,7 @@ docker run -it \
 -v $(pwd)/FutuOpenD.xml:/bin/FutuOpenD.xml \
 -v $(pwd)/futu.pem:/bin/futu.pem \
 -p 11111:11111 \
-manhinhang/futu-opend-docker
+ghcr.io/manhinhang/futu-opend-docker
 ```
 
 ### Input 2FA code

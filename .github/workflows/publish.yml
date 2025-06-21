@@ -54,7 +54,7 @@ jobs:
     timeout-minutes: 20
     needs: extract-version
     env:
-      IMAGE_NAME: manhinhang/futu-opend-docker
+      IMAGE_NAME: ghcr.io/${{ github.repository }}
       BETA_VERSION: ${{ needs.extract-version.outputs.beta_version }}
       STABLE_VERSION: ${{ needs.extract-version.outputs.stable_version }}
     steps:
@@ -62,8 +62,9 @@ jobs:
       - name: Docker login
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKERHUB_CLIENT_ID }}
-          password: ${{ secrets.DOCKERHUB_CLIENT_SECRET }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: set-tag-suffix
         id: tag_suffix
         uses: actions/github-script@v7
