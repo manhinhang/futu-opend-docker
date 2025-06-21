@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   pr-agent:
     runs-on: ubuntu-latest
@@ -20,15 +24,7 @@ jobs:
           OPENAI_API_BASE: https://openroute.ai/api/v1
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          mode: review
-          review_comment_lgtm: false
-          path_filters: |
-            **/*.py
-            **/*.js
-            **/*.ts
-            **/*.yml
-            **/*.yaml
-            **/*.json
-            **/*.md
-            **/*.dockerfile
-            **/Dockerfile 
+          args: |
+            --mode=review
+            --review_comment_lgtm=false
+            --path_filters="**/*.py,**/*.js,**/*.ts,**/*.yml,**/*.yaml,**/*.json,**/*.md,**/*.dockerfile,**/Dockerfile" 
