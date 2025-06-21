@@ -1,6 +1,8 @@
 [pr-agent]
 # 使用中文回复
 language = "zh"
+enable_synchronize = true
+force_review = true
 
 [pr-agent.prompts]
 # 自定义PR评论提示

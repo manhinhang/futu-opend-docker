@@ -2,7 +2,6 @@ name: Lint
 
 on: # yamllint disable-line rule:truthy
     push: null
-    pull_request: null
 
 permissions:
   contents: write
@@ -36,6 +35,11 @@ jobs:
             AUTO_FIX: true
             # Linter rules path (optional)
             LINTER_RULES_PATH: .github/linters
+            FIX_SHELL_SHFMT: true
+            FIX_YAML_PRETTIER: true
+            FIX_JAVASCRIPT_PRETTIER: true
+            FIX_MARKDOWN: true
+            FIX_MARKDOWN_PRETTIER: true
 
         - name: Check for changes
           id: check_changes
