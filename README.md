@@ -28,13 +28,13 @@ docker pull ghcr.io/manhinhang/futu-opend-docker:ubuntu-stable
 > You need to create [FutuOpenD.xml](https://openapi.futunn.com/futu-api-doc/opend/opend-cmd.html) file
 > generate your own RSA key
 >
-> > ```bash
-> > openssl genrsa -out futu.pem 1024
-> > ```
+> ```bash
+> openssl genrsa -out futu.pem 1024
+> ```
 
-PEM file should config in xml
+PEM file should config in XML
 
-```
+```xml
 ...
 <rsa_private_key>/bin/futu.pem</rsa_private_key>
 ...
@@ -68,7 +68,7 @@ Edit `.env`
 
 | Enviroment Variable | Description                     |
 | ------------------- | ------------------------------- |
-| FUTU_ACCOUNT_ID     | Futu account id                 |
+| FUTU_ACCOUNT_ID     | Futu account ID                 |
 | FUTU_ACCOUNT_PWD    | Futu account password           |
 | FUTU_RSA_FILE_PATH  | Futu RSA file path in container |
 | FUTU_OPEND_IP       | Futu OpenD IP in container      |
