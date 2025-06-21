@@ -1,3 +1,8 @@
+[config] # in configuration.toml 
+model="deepseek/deepseek-r1-0528-qwen3-8b:free"
+fallback_models=["openrouter/deepseek/deepseek-r1-0528:free"]
+custom_model_max_tokens=20000
+
 [pr-agent]
 # 使用中文回复
 language = "zh"
