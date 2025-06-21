@@ -23,16 +23,17 @@ docker pull ghcr.io/manhinhang/futu-opend-docker:ubuntu-stable
 | centos     | centos-beta            |
 | centos     | centos-{opend_version} |
 
-
 ## Create a container from the image and run it
 
 > You need to create [FutuOpenD.xml](https://openapi.futunn.com/futu-api-doc/opend/opend-cmd.html) file
 > generate your own RSA key
->> ```bash
->> openssl genrsa -out futu.pem 1024
->> ```
+>
+> > ```bash
+> > openssl genrsa -out futu.pem 1024
+> > ```
 
 PEM file should config in xml
+
 ```
 ...
 <rsa_private_key>/bin/futu.pem</rsa_private_key>
@@ -54,6 +55,7 @@ ghcr.io/manhinhang/futu-opend-docker
 ```bash
 docker attach futu-opend-docker
 ```
+
 2. Input received SMS passcode
 
 ```
@@ -64,13 +66,13 @@ input_phone_verify_code -code=<2FA_CODE>
 
 Edit `.env`
 
-| Enviroment Variable       | Description                     |
-| ------------------------- | ------------------------------- |
-| FUTU_ACCOUNT_ID           | Futu account id                 |
-| FUTU_ACCOUNT_PWD          | Futu account password           |
-| FUTU_RSA_FILE_PATH        | Futu RSA file path in container |
-| FUTU_OPEND_IP             | Futu OpenD IP in container      |
-| FUTU_OPEND_PORT           | Futu OpenD Port in container    |
+| Enviroment Variable | Description                     |
+| ------------------- | ------------------------------- |
+| FUTU_ACCOUNT_ID     | Futu account id                 |
+| FUTU_ACCOUNT_PWD    | Futu account password           |
+| FUTU_RSA_FILE_PATH  | Futu RSA file path in container |
+| FUTU_OPEND_IP       | Futu OpenD IP in container      |
+| FUTU_OPEND_PORT     | Futu OpenD Port in container    |
 
 ```bash
 docker compose up -d
@@ -99,6 +101,6 @@ docker build -t futu-opend-docker --build-arg FUTU_OPEND_VER=7.1.3308 --build-ar
 
 ## Disclaimer
 
-This project is not affiliated with [Futu Securities International  (Hong Kong) Limited](https://www.futuhk.com/).
+This project is not affiliated with [Futu Securities International (Hong Kong) Limited](https://www.futuhk.com/).
 
 Good luck and enjoy.
