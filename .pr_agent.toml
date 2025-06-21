@@ -1,3 +1,12 @@
 [config]
 model="openrouter/deepseek/deepseek-r1-0528-qwen3-8b:free"
 fallback_models=["openrouter/deepseek/deepseek-r1-0528:free"]
+
+
+[pr_reviewer]
+extra_instructions = ""
+enable_review_labels_security = false
+enable_review_labels_effort = false
+require_can_be_split_review = true
+enable_auto_approval = true
+maximal_review_effort = 1
