@@ -4,31 +4,43 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   pr-agent:
+    name: PR Agent
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
       - name: PR Agent
         uses: Codium-ai/pr-agent@main
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENROUTE_API_KEY }}
-          OPENAI_API_BASE: https://openroute.ai/api/v1
+          openrouter__key: ${{ secrets.OPENROUTE_API_KEY }}
+          OPENROUTER.KEY: ${{ secrets.OPENROUTE_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          mode: review
-          review_comment_lgtm: false
-          path_filters: |
-            **/*.py
-            **/*.js
-            **/*.ts
-            **/*.yml
-            **/*.yaml
-            **/*.json
-            **/*.md
-            **/*.dockerfile
-            **/Dockerfile 
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTE_API_KEY }}
+          OPENROUTER_BASE_URL: https://openrouter.ai/api/v1
+          github_action_config.auto_review: "true" # enable\disable auto review
+          github_action_config.auto_describe: "true" # enable\disable auto describe
+          github_action_config.auto_improve: "true" # enable\disable auto improve
+          github_action_config.pr_actions: '["opened", "reopened", "ready_for_review", "review_requested"]'
+        # with:
+        #   args: |
+        #     --mode=review
+        #     --review_comment_lgtm=false
+        #     --model=openrouter/deepseek/deepseek-r1-0528-qwen3-8b:free
+        #     --enable_synchronize=true
+        #     --force_review=true
+        #     --skip_if_no_changes=false
+        #     --verbose=true
+        #     # --path_filters="**/*.py,**/*.js,**/*.ts,**/*.yml,**/*.yaml,**/*.json,**/*.md,**/*.dockerfile,**/Dockerfile"
