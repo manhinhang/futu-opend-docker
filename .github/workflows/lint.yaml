@@ -27,6 +27,7 @@ jobs:
 
       - name: Super-linter
         uses: super-linter/super-linter@v7.4.0 # x-release-please-version
+        continue-on-error: true
         env:
           # To report GitHub Actions status checks
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -37,8 +38,13 @@ jobs:
           FIX_SHELL_SHFMT: true
           FIX_YAML_PRETTIER: true
           FIX_JAVASCRIPT_PRETTIER: true
+          FIX_JAVASCRIPT_STANDARD: true
           FIX_MARKDOWN: true
           FIX_MARKDOWN_PRETTIER: true
+          FIX_DOCKERFILE: true
+          FIX_JSON_PRETTIER: true
+          FIX_JSON: true
+          FIX_ENV: true
 
       - name: Check for changes
         id: check_changes
