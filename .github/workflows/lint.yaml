@@ -45,6 +45,7 @@ jobs:
           FIX_JSON_PRETTIER: true
           FIX_JSON: true
           FIX_ENV: true
+          JSCPD_CONFIG_FILE: .jscpd.json
 
       - name: Check for changes
         id: check_changes
