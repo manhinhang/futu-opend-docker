@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-ARG BASE_IMG=ubuntu:22.04
+ARG BASE_IMG=ubuntu
 
 FROM ubuntu:16.04 AS base-ubuntu
 FROM centos:centos7 AS base-centos
@@ -10,8 +10,7 @@ ARG FUTU_OPEND_VER=8.5.4508
 
 WORKDIR /tmp
 RUN apt-get update
-RUN apt-get install -y curl 
-RUN apt-get install -y gnutls-bin
+RUN apt-get install --no-install-recommends -y curl=7.47.0-1ubuntu2.19 gnutls-bin=3.4.10-4ubuntu1
 COPY script/download_futu_opend.sh ./
 RUN chmod +x ./download_futu_opend.sh
 RUN ./download_futu_opend.sh Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu16.04.tar.gz
@@ -20,7 +19,6 @@ RUN tar -xzf Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu16.04.tar.gz
 FROM base-centos AS build-centos
 ARG FUTU_OPEND_VER=8.2.4218
 
-USER root
 WORKDIR /tmp
 COPY script/download_futu_opend.sh ./
 RUN chmod +x ./download_futu_opend.sh
