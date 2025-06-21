@@ -1,35 +1,35 @@
 name: PR Agent
 
 on:
-    pull_request:
-        types: [opened, synchronize, reopened]
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 permissions:
-    contents: read
-    pull-requests: write
+  contents: read
+  pull-requests: write
 
 jobs:
-    pr-agent:
-        name: PR Agent
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0
+  pr-agent:
+    name: PR Agent
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-            - name: PR Agent
-              uses: Codium-ai/pr-agent@main
-              env:
-                  OPENAI_API_KEY: ${{ secrets.OPENROUTE_API_KEY }}
-                  OPENAI_KEY: ${{ secrets.OPENROUTE_API_KEY }}
-                  OPENAI_API_BASE: https://openrouter.ai/api/v1
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              with:
-                  args: |
-                      --mode=review
-                      --review_comment_lgtm=false
-                      --model=deepseek/deepseek-r1-0528-qwen3-8b:free
-                      --enable_synchronize=true
-                      --force_review=true
-                      --path_filters="**/*.py,**/*.js,**/*.ts,**/*.yml,**/*.yaml,**/*.json,**/*.md,**/*.dockerfile,**/Dockerfile"
+      - name: PR Agent
+        uses: Codium-ai/pr-agent@main
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENROUTE_API_KEY }}
+          OPENAI_KEY: ${{ secrets.OPENROUTE_API_KEY }}
+          OPENAI_API_BASE: https://openrouter.ai/api/v1
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: |
+            --mode=review
+            --review_comment_lgtm=false
+            --model=deepseek/deepseek-r1-0528-qwen3-8b:free
+            --enable_synchronize=true
+            --force_review=true
+            --path_filters="**/*.py,**/*.js,**/*.ts,**/*.yml,**/*.yaml,**/*.json,**/*.md,**/*.dockerfile,**/Dockerfile"
