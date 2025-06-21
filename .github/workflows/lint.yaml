@@ -35,6 +35,7 @@ jobs:
             LINTER_RULES_PATH: .github/linters
         - name: Check for changes
           id: check_changes
+          continue-on-error: true
           run: |
               if [[ -n "$(git status --porcelain)" ]]; then
               echo "has_changes=true" >> $GITHUB_OUTPUT
@@ -44,6 +45,7 @@ jobs:
           
         - name: Create Pull Request
           if: steps.check_changes.outputs.has_changes == 'true'
+          continue-on-error: true
           env:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           run: |
