@@ -8,6 +8,11 @@ on:
     - cron: "0 0 * * *"
   workflow_dispatch:
 
+permissions:
+  pull-requests: read
+  contents: read
+  issues: read
+
 jobs:
   check-version:
     name: Check Version
@@ -19,7 +24,7 @@ jobs:
       contents: write
       issues: write
     steps:
-      - name: Checkout code aaa
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Install node

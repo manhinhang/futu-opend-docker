@@ -12,18 +12,18 @@ WORKDIR /tmp
 RUN apt-get update
 RUN apt-get install --no-install-recommends -y curl=7.47.0-1ubuntu2.19 gnutls-bin=3.4.10-4ubuntu1
 COPY script/download_futu_opend.sh ./
-RUN chmod +x ./download_futu_opend.sh
-RUN ./download_futu_opend.sh Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu16.04.tar.gz
-RUN tar -xzf Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu16.04.tar.gz
+RUN chmod +x ./download_futu_opend.sh && \
+    ./download_futu_opend.sh Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu16.04.tar.gz && \
+    tar -xzf Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu16.04.tar.gz
 
 FROM base-centos AS build-centos
 ARG FUTU_OPEND_VER=8.2.4218
 
 WORKDIR /tmp
 COPY script/download_futu_opend.sh ./
-RUN chmod +x ./download_futu_opend.sh
-RUN ./download_futu_opend.sh Futu_OpenD_${FUTU_OPEND_VER}_Centos7.tar.gz
-RUN tar -xzf Futu_OpenD_${FUTU_OPEND_VER}_Centos7.tar.gz
+RUN chmod +x ./download_futu_opend.sh && \
+    ./download_futu_opend.sh Futu_OpenD_${FUTU_OPEND_VER}_Centos7.tar.gz && \
+    tar -xzf Futu_OpenD_${FUTU_OPEND_VER}_Centos7.tar.gz
 
 # copy futu opend to /bin
 
@@ -50,11 +50,9 @@ ENV FUTU_OPEND_IP=127.0.0.1
 ENV FUTU_OPEND_PORT=11111
 ENV FUTU_OPEND_TELNET_PORT=22222
 
-# Create non-root user
-RUN groupadd -r futu && useradd -r -g futu futu
-
-# Create necessary directories and set permissions
-RUN mkdir -p /.futu /bin && chown -R futu:futu /.futu /bin
+# Create non-root user and necessary directories
+RUN groupadd -r futu && useradd -r -g futu futu && \
+    mkdir -p /.futu /bin && chown -R futu:futu /.futu /bin
 
 COPY script/start.sh /bin/start.sh
 RUN chmod +x /bin/start.sh && chown futu:futu /bin/start.sh
