@@ -9,6 +9,10 @@ on:
       - LICENSE
       - .github/workflows/check-ver-update.yml
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   extract-version:
     runs-on: ubuntu-latest
