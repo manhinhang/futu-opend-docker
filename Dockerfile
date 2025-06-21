@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-ARG BASE_IMG=ubuntu
+ARG BASE_IMG=ubuntu:22.04
 
 FROM ubuntu:16.04 AS base-ubuntu
 FROM centos:centos7 AS base-centos
