@@ -21,7 +21,7 @@ sed -i "s|<rsa_private_key>.*<\/rsa_private_key>|<rsa_private_key>$FUTU_OPEND_RS
 
 # if telnet is available, then check if the port is open
 if [ -n $FUTU_OPEND_TELNET_PORT ]; then
-    sed -i "s|<telnet_port>.*<\/telnet_port>|<telnet_port>$FUTU_OPEND_TELNET_PORT</telnet_port>|" $FUTU_OPEND_XML_PATH
-fi  
+	sed -i "s|<telnet_port>.*<\/telnet_port>|<telnet_port>$FUTU_OPEND_TELNET_PORT</telnet_port>|" $FUTU_OPEND_XML_PATH
+fi
 
 /bin/FutuOpenD

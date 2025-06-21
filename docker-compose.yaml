@@ -1,4 +1,3 @@
-
 services:
   futu-opend:
     build:
@@ -15,5 +14,3 @@ services:
       - $LOCAL_RSA_FILE_PATH:/.futu/futu.pem
     env_file:
       - .env
-
-  
