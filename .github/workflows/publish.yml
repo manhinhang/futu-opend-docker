@@ -83,6 +83,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
+          target: final-${{ matrix.BASE_IMG }}-target
           build-args: |
             "FUTU_OPEND_VER=${{ matrix.FUTU_OPEND_VER }}"
             "BASE_IMG=${{ matrix.BASE_IMG }}"
