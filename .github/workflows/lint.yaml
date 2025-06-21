@@ -27,7 +27,6 @@ jobs:
 
       - name: Super-linter
         uses: super-linter/super-linter@v7.4.0 # x-release-please-version
-        continue-on-error: true
         env:
           # To report GitHub Actions status checks
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
