@@ -11,14 +11,6 @@
     "**/.github/**"
   ],
   "threshold": 5,
-  "reporters": [
-    "console",
-    "html",
-    "json"
-  ],
-  "ignorePatterns": [
-    "*.lock",
-    "*.min.js",
-    "*.bundle.js"
-  ]
-} 
+  "reporters": ["console", "html", "json"],
+  "ignorePatterns": ["*.lock", "*.min.js", "*.bundle.js"]
+}
