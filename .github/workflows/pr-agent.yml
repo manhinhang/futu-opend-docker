@@ -12,6 +12,10 @@ jobs:
   pr-agent:
     name: PR Agent
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -22,6 +26,7 @@ jobs:
         uses: Codium-ai/pr-agent@main
         env:
           openrouter__key: ${{ secrets.OPENROUTE_API_KEY }}
+          OPENROUTER.KEY: ${{ secrets.OPENROUTE_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTE_API_KEY }}
           OPENROUTER_BASE_URL: https://openrouter.ai/api/v1
