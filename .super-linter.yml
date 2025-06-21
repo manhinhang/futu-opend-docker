@@ -13,8 +13,7 @@ IGNORE_GENERATED_FILES: true
 # Ignore specific file extensions
 IGNORE_FILE_EXTENSIONS:
   - .lock
-
 # Optional: Disable specific linters if needed
 # DISABLE:
 #   - JAVASCRIPT_ES
-#   - JAVASCRIPT_STANDARD 
+#   - JAVASCRIPT_STANDARD
