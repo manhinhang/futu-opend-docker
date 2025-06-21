@@ -2,7 +2,7 @@
 
 URL=https://softwaredownload.futunn.com/$1
 echo "downloading '${URL}'"
-curl "${URL}" \
+curl -k "${URL}" \
 	-H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7' \
 	-H 'accept-language: en-US,en;q=0.9' \
 	-H 'priority: u=0, i' \

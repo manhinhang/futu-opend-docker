@@ -2,8 +2,6 @@ name: Publish Docker image
 
 on:
   push:
-    branches:
-      - main
     paths-ignore:
       - README.md
       - LICENSE
@@ -82,7 +80,7 @@ jobs:
       - name: build-push
         uses: docker/build-push-action@v5
         with:
-          push: true
+          push: ${{ github.ref == 'refs/heads/main' }}
           target: final-${{ matrix.BASE_IMG }}-target
           build-args: |
             "FUTU_OPEND_VER=${{ matrix.FUTU_OPEND_VER }}"
