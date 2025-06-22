@@ -25,14 +25,14 @@ jobs:
         with:
           script: |
             const config = require('./opend_version.json');
-            return config.beta_version;
+            return config.betaVersion;
           result-encoding: string
       - uses: actions/github-script@v7
         id: stable_version
         with:
           script: |
             const config = require('./opend_version.json');
-            return config.stable_version;
+            return config.stableVersion;
           result-encoding: string
       - id: set-matrix
         uses: actions/github-script@v7
