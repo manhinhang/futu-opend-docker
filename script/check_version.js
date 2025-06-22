@@ -46,7 +46,8 @@ async function main () {
   console.log(data)
 
   const outputFilePath = path.join(__dirname, '..', 'opend_version.json')
-  fs.writeFileSync(outputFilePath, JSON.stringify(data, null, 2), 'utf8')
+  const jsonString = JSON.stringify(data, null, 2) + '\n'
+  fs.writeFileSync(outputFilePath, jsonString, 'utf8')
   console.log(`Version data written to ${outputFilePath}`)
 }
 
