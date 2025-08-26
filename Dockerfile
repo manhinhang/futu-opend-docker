@@ -51,8 +51,8 @@ ENV FUTU_OPEND_PORT=11111
 ENV FUTU_OPEND_TELNET_PORT=22222
 
 # Create non-root user and necessary directories
-RUN groupadd -r futu && useradd -r -g futu futu && \
-    mkdir -p /.futu /bin && chown -R futu:futu /.futu /bin
+RUN groupadd -r futu && useradd -r -g futu -m -d /home/futu futu && \
+    mkdir -p /.futu /bin && chown -R futu:futu /.futu /bin /home/futu
 
 COPY script/start.sh /bin/start.sh
 RUN chmod +x /bin/start.sh && chown futu:futu /bin/start.sh
@@ -81,8 +81,8 @@ ENV FUTU_OPEND_PORT=11111
 ENV FUTU_OPEND_TELNET_PORT=22222
 
 # Create non-root user and necessary directories
-RUN groupadd -r futu && useradd -r -g futu futu && \
-    mkdir -p /.futu /bin && chown -R futu:futu /.futu /bin
+RUN groupadd -r futu && useradd -r -g futu -m -d /home/futu futu && \
+    mkdir -p /.futu /bin && chown -R futu:futu /.futu /bin /home/futu
 
 COPY script/start.sh /bin/start.sh
 RUN chmod +x /bin/start.sh && chown futu:futu /bin/start.sh
