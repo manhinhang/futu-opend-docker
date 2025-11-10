@@ -41,33 +41,62 @@ jobs:
         run: |
           node script/check_version.js
 
+      - name: Update Dockerfile with new version
+        id: update_dockerfile
+        run: |
+          if [ -f opend_version.json ] && [ -s opend_version.json ]; then
+            STABLE_VERSION=$(node -pe "require('./opend_version.json').stableVersion")
+            echo "New stable version: $STABLE_VERSION"
+
+            # Update all occurrences of FUTU_OPEND_VER in Dockerfile
+            sed -i "s/ARG FUTU_OPEND_VER=.*/ARG FUTU_OPEND_VER=$STABLE_VERSION/g" Dockerfile
+
+            # Check if there are actual changes
+            if git diff --quiet; then
+              echo "has_changes=false" >> $GITHUB_OUTPUT
+              echo "No version update needed"
+            else
+              echo "has_changes=true" >> $GITHUB_OUTPUT
+              echo "version=$STABLE_VERSION" >> $GITHUB_OUTPUT
+              echo "Version updated to $STABLE_VERSION"
+            fi
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No version file found or file is empty"
+          fi
+
       - name: Create Pull Request if needed
+        if: steps.update_dockerfile.outputs.has_changes == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ -f opend_version.json ] && [ -s opend_version.json ]; then
-            # 检查是否有新的版本更新
-            if git diff --quiet opend_version.json; then
-              echo "No version update needed"
-            else
-              # 创建新分支并提交更改
-              git config --global user.name "github-actions[bot]"
-              git config --global user.email "github-actions[bot]@users.noreply.github.com"
-              
-              # 关闭已存在的 PR
-              gh pr list --search "Update Futu OpenD version" --json number --jq ".[].number" | xargs -I {} gh pr close {} || true
-              
-              # 创建新分支
-              git checkout -b update-futu-opend-version
-              git add opend_version.json
-              git commit -m "Update Futu OpenD version"
-              
-              # 推送更改
-              git push origin update-futu-opend-version
-              
-              # 创建新的 PR
-              gh pr create --title "Update Futu OpenD version" --body "Update Futu OpenD version"
-            fi
-          else
-            echo "No version file found or file is empty"
-          fi
+          VERSION="${{ steps.update_dockerfile.outputs.version }}"
+          BRANCH_NAME="update-futu-opend-version-$VERSION"
+
+          # 配置 git
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          # 关闭已存在的相关 PR
+          gh pr list --state open --search "Update Futu OpenD version" --json number --jq ".[].number" | xargs -I {} gh pr close {} || true
+
+          # 创建新分支
+          git checkout -b "$BRANCH_NAME"
+          git add opend_version.json Dockerfile
+          git commit -m "Update Futu OpenD version to $VERSION"
+
+          # 推送更改
+          git push -f origin "$BRANCH_NAME"
+
+          # 创建新的 PR with auto-merge label
+          gh pr create \
+            --title "Update Futu OpenD version to $VERSION" \
+            --body "This PR updates Futu OpenD to version $VERSION
+
+          ## Changes
+          - Updated \`opend_version.json\` with new version info
+          - Updated \`Dockerfile\` to use version $VERSION
+
+          ## Auto-merge
+          This PR will be automatically merged after the build succeeds." \
+            --label "auto-merge"

@@ -1,0 +1,131 @@
+name: Auto-merge on Successful Build
+
+on:
+  pull_request:
+    types: [opened, synchronize, labeled, reopened]
+  workflow_run:
+    workflows: ["Publish Docker image"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  auto-merge:
+    name: Auto-merge PR after successful build
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'auto-merge')) ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get PR number
+        id: get_pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          else
+            # For workflow_run events, find the PR associated with the head SHA
+            PR_NUMBER=$(gh pr list --search "${{ github.event.workflow_run.head_sha }}" --json number --jq ".[0].number")
+            if [ -n "$PR_NUMBER" ]; then
+              echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+            else
+              echo "No PR found for this workflow run"
+              exit 0
+            fi
+          fi
+
+      - name: Check if PR has auto-merge label
+        id: check_label
+        if: steps.get_pr.outputs.pr_number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ steps.get_pr.outputs.pr_number }}"
+          HAS_LABEL=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name' | grep -q "auto-merge" && echo "true" || echo "false")
+          echo "has_auto_merge_label=$HAS_LABEL" >> $GITHUB_OUTPUT
+
+      - name: Wait for checks to complete
+        if: steps.check_label.outputs.has_auto_merge_label == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ steps.get_pr.outputs.pr_number }}"
+          echo "Waiting for checks to complete for PR #$PR_NUMBER..."
+
+          # Wait up to 30 minutes for checks to complete
+          TIMEOUT=1800
+          ELAPSED=0
+          INTERVAL=30
+
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            # Get the status of all checks
+            CHECK_STATUS=$(gh pr checks "$PR_NUMBER" --json state --jq 'map(select(.state != "SUCCESS" and .state != "SKIPPED")) | length')
+
+            if [ "$CHECK_STATUS" == "0" ]; then
+              echo "All checks passed!"
+              break
+            fi
+
+            echo "Checks still running... waiting $INTERVAL seconds"
+            sleep $INTERVAL
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
+
+          if [ $ELAPSED -ge $TIMEOUT ]; then
+            echo "Timeout waiting for checks to complete"
+            exit 1
+          fi
+
+      - name: Check build status
+        id: check_build
+        if: steps.check_label.outputs.has_auto_merge_label == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ steps.get_pr.outputs.pr_number }}"
+
+          # Check if all required checks passed
+          FAILED_CHECKS=$(gh pr checks "$PR_NUMBER" --json name,state --jq 'map(select(.state != "SUCCESS" and .state != "SKIPPED")) | length')
+
+          if [ "$FAILED_CHECKS" == "0" ]; then
+            echo "build_passed=true" >> $GITHUB_OUTPUT
+            echo "All checks passed successfully"
+          else
+            echo "build_passed=false" >> $GITHUB_OUTPUT
+            echo "Some checks failed"
+            gh pr checks "$PR_NUMBER"
+          fi
+
+      - name: Merge PR
+        if: steps.check_build.outputs.build_passed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ steps.get_pr.outputs.pr_number }}"
+
+          echo "Auto-merging PR #$PR_NUMBER..."
+
+          # Merge the PR
+          gh pr merge "$PR_NUMBER" \
+            --auto \
+            --squash \
+            --delete-branch \
+            --subject "Auto-merge: Update Futu OpenD version"
+
+      - name: Comment on PR if merge failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ steps.get_pr.outputs.pr_number }}"
+
+          gh pr comment "$PR_NUMBER" \
+            --body "❌ Auto-merge failed. Please check the build status and merge manually if needed."
