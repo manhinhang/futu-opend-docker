@@ -26,14 +26,14 @@ Docker containerization for Futu OpenD — a trading API gateway for Futu Securi
 
 ## WHERE TO LOOK
 
-| Task | Location | Notes |
-|------|----------|-------|
-| Add build arg | `Dockerfile` L9, L20, L31, L38 | `FUTU_OPEND_VER` |
-| Modify startup | `script/start.sh` | XML sed replacement happens here |
-| Change CI triggers | `.github/workflows/publish.yml` | Matrix: BASE_IMG × VERSION |
-| Update config template | `FutuOpenD.xml` | Placeholders: `###VAR###` |
-| Version detection | `script/check_version.js` | Scraper with retry, timeout, validation |
-| Run tests | `script/check_version.test.js` | `node --test script/check_version.test.js` |
+| Task                   | Location                        | Notes                                      |
+| ---------------------- | ------------------------------- | ------------------------------------------ |
+| Add build arg          | `Dockerfile` L9, L20, L31, L38  | `FUTU_OPEND_VER`                           |
+| Modify startup         | `script/start.sh`               | XML sed replacement happens here           |
+| Change CI triggers     | `.github/workflows/publish.yml` | Matrix: BASE_IMG × VERSION                 |
+| Update config template | `FutuOpenD.xml`                 | Placeholders: `###VAR###`                  |
+| Version detection      | `script/check_version.js`       | Scraper with retry, timeout, validation    |
+| Run tests              | `script/check_version.test.js`  | `node --test script/check_version.test.js` |
 
 ## CONVENTIONS
 
