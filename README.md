@@ -41,7 +41,7 @@ PEM file should config in XML
 ```
 
 ```bash
-docker run -it \
+docker run -it --name futu-opend-docker \
 -v $(pwd)/FutuOpenD.xml:/bin/FutuOpenD.xml \
 -v $(pwd)/futu.pem:/bin/futu.pem \
 -p 11111:11111 \
@@ -50,10 +50,10 @@ ghcr.io/manhinhang/futu-opend-docker
 
 ### Input 2FA code
 
-1. Attach to futu opend continer
+1. Attach to futu opend container
 
 ```bash
-docker attach futu-opend-docker
+docker attach futu-opend
 ```
 
 2. Input received SMS passcode
@@ -87,17 +87,37 @@ input_phone_verify_code -code=<2FA_CODE>
 
 ## Build locally
 
+> **Note**: Ubuntu builds require version 9.4.x or later with Ubuntu 18.04 base image. Ubuntu 16.04 builds are no longer provided by Futu.
+
 - Use ubuntu as base image
 
 ```bash
-docker build -t futu-opend-docker --build-arg FUTU_OPEND_VER=9.6.5608 --build-arg BASE_IMG=ubuntu .
+docker build -t futu-opend-docker --build-arg FUTU_OPEND_VER=10.0.6008 --build-arg BASE_IMG=ubuntu .
 ```
 
 - Use centos as base image
 
 ```bash
-docker build -t futu-opend-docker --build-arg FUTU_OPEND_VER=9.6.5608 --build-arg BASE_IMG=centos .
+docker build -t futu-opend-docker --build-arg FUTU_OPEND_VER=10.0.6008 --build-arg BASE_IMG=centos .
 ```
+
+## Troubleshooting
+
+### Download failures
+
+If you encounter download failures during build:
+
+1. **Network issues**: The download script includes automatic retry logic (3 attempts)
+2. **Version compatibility**: Ensure you're using a version that has Ubuntu 18.04 builds (9.4.x or later)
+3. **Check available versions**: Visit [Futu OpenD download page](https://www.futunn.com/en/download/OpenAPI)
+
+### Container startup issues
+
+If the container fails to start:
+
+1. **RSA key**: Ensure `futu.pem` exists and is properly mounted
+2. **Config file**: Verify `FutuOpenD.xml` is valid XML
+3. **2FA required**: First run requires SMS verification code via `docker attach`
 
 ## Disclaimer
 
