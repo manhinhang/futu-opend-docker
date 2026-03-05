@@ -19,9 +19,12 @@ sed -i "s|<login_account>.*<\/login_account>|<login_account>$FUTU_ACCOUNT_ID</lo
 sed -i "s|<login_pwd_md5>.*<\/login_pwd_md5>|<login_pwd_md5>$FUTU_ACCOUNT_PWD_MD5</login_pwd_md5>|" $FUTU_OPEND_XML_PATH
 sed -i "s|<rsa_private_key>.*<\/rsa_private_key>|<rsa_private_key>$FUTU_OPEND_RSA_FILE_PATH</rsa_private_key>|" $FUTU_OPEND_XML_PATH
 
-# if telnet is available, then check if the port is open
+# Enable telnet port if specified
 if [ -n "$FUTU_OPEND_TELNET_PORT" ]; then
-	sed -i "s|<telnet_port>.*<\/telnet_port>|<telnet_port>$FUTU_OPEND_TELNET_PORT</telnet_port>|" $FUTU_OPEND_XML_PATH
+	sed -i "s|###FUTU_OPEND_TELNET_PORT###|$FUTU_OPEND_TELNET_PORT|" $FUTU_OPEND_XML_PATH
+else
+	# Comment out telnet port if not specified
+	sed -i "s|<telnet_port>.*<\/telnet_port>|<!-- <telnet_port>22222</telnet_port> -->|" $FUTU_OPEND_XML_PATH
 fi
 
 /bin/FutuOpenD
