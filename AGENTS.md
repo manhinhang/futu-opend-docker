@@ -18,7 +18,7 @@ Docker containerization for Futu OpenD — a trading API gateway for Futu Securi
 ├── opend_version.json      # Version tracking (auto-updated by CI)
 ├── script/
 │   ├── start.sh            # Entrypoint — replaces XML placeholders
-│   ├── download_futu_opend.sh  # Downloads FutuOpenD tarball
+│   ├── download_futu_opend.sh  # Downloads FutuOpenD (3 retries, exponential backoff)
 │   ├── check_version.js    # Version scraper with retry, timeout, validation
 │   └── check_version.test.js  # Unit tests (node:test)
 └── .github/workflows/      # CI: publish, lint, version-check, pr-agent
@@ -34,6 +34,7 @@ Docker containerization for Futu OpenD — a trading API gateway for Futu Securi
 | Update config template | `FutuOpenD.xml` | Placeholders: `###VAR###` |
 | Version detection | `script/check_version.js` | Scraper with retry, timeout, validation |
 | Run tests | `script/check_version.test.js` | `node --test script/check_version.test.js` |
+| Download manually | `script/download_futu_opend.sh --retry 3` | Retry with exponential backoff |
 
 ## CONVENTIONS
 
@@ -83,4 +84,5 @@ node script/check_version.js
 - **Slow startup**: FutuOpenD takes 2-3 minutes to initialize; healthcheck has 180s grace period
 - **2FA required**: First run needs SMS code input via attached terminal
 - **Tests**: `node --test script/check_version.test.js` (uses built-in node:test)
+- **Download**: `script/download_futu_opend.sh --retry 3` (retry with exponential backoff)
 - **Disclaimer**: Not affiliated with Futu Securities
