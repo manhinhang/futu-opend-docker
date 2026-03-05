@@ -3,11 +3,87 @@ const { JSDOM } = jsdom
 const fs = require('fs')
 const path = require('path')
 
-const url = 'https://www.futunn.com/en/download/OpenAPI'
+const DEFAULT_URL = 'https://www.futunn.com/en/download/OpenAPI'
+const DEFAULT_OUTPUT_PATH = path.join(__dirname, '..', 'opend_version.json')
+const DEFAULT_TIMEOUT = 30000
+const DEFAULT_RETRIES = 3
+const DEFAULT_RETRY_DELAY = 1000
 
-async function loadDocument () {
-  const dom = await JSDOM.fromURL(url)
-  return dom.window.document
+const VERSION_REGEX = /^\d+\.\d+\.\d+$/
+
+class VersionFetchError extends Error {
+  constructor (message, cause) {
+    super(message)
+    this.name = 'VersionFetchError'
+    this.cause = cause
+  }
+}
+
+function sleep (ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function isValidVersion (version) {
+  return typeof version === 'string' && VERSION_REGEX.test(version)
+}
+
+function validateVersionData (data) {
+  if (!isValidVersion(data.stableVersion)) {
+    throw new VersionFetchError(
+      `Invalid stable version: ${data.stableVersion}. Expected format: X.Y.Z`
+    )
+  }
+  if (data.betaVersion !== null && !isValidVersion(data.betaVersion)) {
+    throw new VersionFetchError(
+      `Invalid beta version: ${data.betaVersion}. Expected format: X.Y.Z or null`
+    )
+  }
+  return true
+}
+
+async function loadDocument (url = DEFAULT_URL, options = {}) {
+  const { timeout = DEFAULT_TIMEOUT, retries = DEFAULT_RETRIES, retryDelay = DEFAULT_RETRY_DELAY } = options
+
+  let lastError = null
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), timeout)
+
+      const dom = await JSDOM.fromURL(url, {
+        resources: 'usable',
+        pretendToBeVisual: true,
+        fetchOptions: {
+          signal: controller.signal,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; FutuOpenD-VersionChecker/1.0)'
+          }
+        }
+      })
+
+      clearTimeout(timeoutId)
+      return dom.window.document
+    } catch (err) {
+      lastError = err
+      const isTimeout = err.name === 'AbortError'
+      const errorMsg = isTimeout
+        ? `Request timeout after ${timeout}ms`
+        : err.message
+
+      console.error(`Attempt ${attempt}/${retries} failed: ${errorMsg}`)
+
+      if (attempt < retries) {
+        console.log(`Retrying in ${retryDelay}ms...`)
+        await sleep(retryDelay)
+      }
+    }
+  }
+
+  throw new VersionFetchError(
+    `Failed to fetch document after ${retries} attempts: ${lastError?.message}`,
+    lastError
+  )
 }
 
 function getBetaVersion (document) {
@@ -15,40 +91,94 @@ function getBetaVersion (document) {
     'div.version-number > p.version-name > span.new-icon'
   )
   if (!betaElement) return null
-  return betaElement.parentNode
-    .querySelector('span.version')
-    .textContent.replace('Ver.', '')
-    .trim()
+  const versionSpan = betaElement.parentNode.querySelector('span.version')
+  if (!versionSpan) return null
+  return versionSpan.textContent.replace('Ver.', '').trim()
 }
 
 function getAllVersion (document) {
-  return Array.prototype.map.call(
-    document.querySelectorAll(
-      'div.version-number > p.version-name > span.version'
-    ),
-    (x) => x.textContent.replace('Ver.', '').trim()
-  )
+  return Array.from(
+    document.querySelectorAll('div.version-number > p.version-name > span.version'),
+    (el) => el.textContent.replace('Ver.', '').trim()
+  ).filter((v) => v)
 }
 
-async function main () {
-  const document = await loadDocument()
+function parseVersions (document) {
   const betaVersion = getBetaVersion(document)
-  const allVersion = getAllVersion(document)
-  const stableVersionList = allVersion.filter((x) => x !== betaVersion)
-  const stableVersion = stableVersionList[0]
-  console.log('beta version: ' + betaVersion)
-  console.log('stable version list: ' + stableVersionList)
-  console.log('stable version: ' + stableVersion)
-  const data = {
-    betaVersion,
-    stableVersion
-  }
-  console.log(data)
+  const allVersions = getAllVersion(document)
 
-  const outputFilePath = path.join(__dirname, '..', 'opend_version.json')
-  const jsonString = JSON.stringify(data, null, 2) + '\n'
-  fs.writeFileSync(outputFilePath, jsonString, 'utf8')
-  console.log(`Version data written to ${outputFilePath}`)
+  if (allVersions.length === 0) {
+    throw new VersionFetchError('No versions found on page')
+  }
+
+  const stableVersions = allVersions.filter((v) => v !== betaVersion)
+  const stableVersion = stableVersions[0] || allVersions[0]
+
+  return { betaVersion, stableVersion }
 }
 
-main()
+function writeVersionFile (data, outputPath = DEFAULT_OUTPUT_PATH) {
+  const jsonString = JSON.stringify(data, null, 2) + '\n'
+  fs.writeFileSync(outputPath, jsonString, 'utf8')
+}
+
+function logVersionInfo (data, outputPath) {
+  console.log(JSON.stringify({
+    level: 'info',
+    message: 'Version data fetched',
+    betaVersion: data.betaVersion,
+    stableVersion: data.stableVersion,
+    outputPath
+  }))
+}
+
+async function main (options = {}) {
+  const {
+    url = DEFAULT_URL,
+    outputPath = DEFAULT_OUTPUT_PATH,
+    timeout = DEFAULT_TIMEOUT,
+    retries = DEFAULT_RETRIES,
+    validate = true
+  } = options
+
+  const document = await loadDocument(url, { timeout, retries })
+  const data = parseVersions(document)
+
+  if (validate) {
+    validateVersionData(data)
+  }
+
+  writeVersionFile(data, outputPath)
+  logVersionInfo(data, outputPath)
+
+  return data
+}
+
+module.exports = {
+  loadDocument,
+  getBetaVersion,
+  getAllVersion,
+  parseVersions,
+  writeVersionFile,
+  logVersionInfo,
+  validateVersionData,
+  isValidVersion,
+  main,
+  VersionFetchError,
+  DEFAULT_URL,
+  DEFAULT_OUTPUT_PATH,
+  DEFAULT_TIMEOUT,
+  DEFAULT_RETRIES
+}
+
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(JSON.stringify({
+      level: 'error',
+      message: 'Failed to fetch version',
+      error: err.message,
+      cause: err.cause?.message
+    }))
+    process.exit(1)
+  })
+}
