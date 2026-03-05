@@ -2,7 +2,7 @@
 
 ARG BASE_IMG=ubuntu
 
-FROM ubuntu:16.04 AS base-ubuntu
+FROM ubuntu:18.04 AS base-ubuntu
 FROM centos:centos7 AS base-centos
 
 FROM base-ubuntu AS build-ubuntu
@@ -10,11 +10,11 @@ ARG FUTU_OPEND_VER=9.3.5308
 
 WORKDIR /tmp
 RUN apt-get update && \
-    apt-get install --no-install-recommends -y curl=7.47.0-1ubuntu2.19 gnutls-bin=3.4.10-4ubuntu1
+    apt-get install --no-install-recommends -y curl gnutls-bin
 COPY script/download_futu_opend.sh ./
 RUN chmod +x ./download_futu_opend.sh && \
-    ./download_futu_opend.sh Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu16.04.tar.gz && \
-    tar -xzf Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu16.04.tar.gz
+    ./download_futu_opend.sh Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu18.04.tar.gz && \
+    tar -xzf Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu18.04.tar.gz
 
 FROM base-centos AS build-centos
 ARG FUTU_OPEND_VER=9.3.5308
@@ -30,7 +30,7 @@ RUN chmod +x ./download_futu_opend.sh && \
 FROM base-ubuntu AS final-ubuntu
 ARG FUTU_OPEND_VER=9.3.5308
 
-COPY --from=build-ubuntu /tmp/Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu16.04/Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu16.04 /bin
+COPY --from=build-ubuntu /tmp/Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu18.04/Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu18.04 /bin
 
 CMD ["/bin/start.sh"]
 
