@@ -90,13 +90,13 @@ input_phone_verify_code -code=<2FA_CODE>
 - Use ubuntu as base image
 
 ```bash
-docker build -t futu-opend-docker --build-arg FUTU_OPEND_VER=7.1.3308 --build-arg BASE_IMG=ubuntu .
+docker build -t futu-opend-docker --build-arg FUTU_OPEND_VER=9.6.5608 --build-arg BASE_IMG=ubuntu .
 ```
 
 - Use centos as base image
 
 ```bash
-docker build -t futu-opend-docker --build-arg FUTU_OPEND_VER=7.1.3308 --build-arg BASE_IMG=centos .
+docker build -t futu-opend-docker --build-arg FUTU_OPEND_VER=9.6.5608 --build-arg BASE_IMG=centos .
 ```
 
 ## Disclaimer
