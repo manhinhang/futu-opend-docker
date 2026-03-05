@@ -42,7 +42,11 @@ function validateVersionData (data) {
 }
 
 async function loadDocument (url = DEFAULT_URL, options = {}) {
-  const { timeout = DEFAULT_TIMEOUT, retries = DEFAULT_RETRIES, retryDelay = DEFAULT_RETRY_DELAY } = options
+  const {
+    timeout = DEFAULT_TIMEOUT,
+    retries = DEFAULT_RETRIES,
+    retryDelay = DEFAULT_RETRY_DELAY
+  } = options
 
   let lastError = null
 
@@ -57,7 +61,8 @@ async function loadDocument (url = DEFAULT_URL, options = {}) {
         fetchOptions: {
           signal: controller.signal,
           headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; FutuOpenD-VersionChecker/1.0)'
+            'User-Agent':
+              'Mozilla/5.0 (compatible; FutuOpenD-VersionChecker/1.0)'
           }
         }
       })
@@ -98,7 +103,9 @@ function getBetaVersion (document) {
 
 function getAllVersion (document) {
   return Array.from(
-    document.querySelectorAll('div.version-number > p.version-name > span.version'),
+    document.querySelectorAll(
+      'div.version-number > p.version-name > span.version'
+    ),
     (el) => el.textContent.replace('Ver.', '').trim()
   ).filter((v) => v)
 }
@@ -123,13 +130,15 @@ function writeVersionFile (data, outputPath = DEFAULT_OUTPUT_PATH) {
 }
 
 function logVersionInfo (data, outputPath) {
-  console.log(JSON.stringify({
-    level: 'info',
-    message: 'Version data fetched',
-    betaVersion: data.betaVersion,
-    stableVersion: data.stableVersion,
-    outputPath
-  }))
+  console.log(
+    JSON.stringify({
+      level: 'info',
+      message: 'Version data fetched',
+      betaVersion: data.betaVersion,
+      stableVersion: data.stableVersion,
+      outputPath
+    })
+  )
 }
 
 async function main (options = {}) {
@@ -173,12 +182,14 @@ module.exports = {
 
 if (require.main === module) {
   main().catch((err) => {
-    console.error(JSON.stringify({
-      level: 'error',
-      message: 'Failed to fetch version',
-      error: err.message,
-      cause: err.cause?.message
-    }))
+    console.error(
+      JSON.stringify({
+        level: 'error',
+        message: 'Failed to fetch version',
+        error: err.message,
+        cause: err.cause?.message
+      })
+    )
     process.exit(1)
   })
 }
