@@ -50,6 +50,7 @@ ghcr.io/manhinhang/futu-opend-docker
 ```
 
 > **Port mappings**:
+>
 > - `11111`: API port for FutuOpenD protocol
 > - `22222`: Telnet port for 2FA input (optional, but recommended for automation)
 
@@ -73,6 +74,7 @@ docker attach futu-opend
 2. Input verification code based on the type:
 
 **For SMS verification code:**
+
 ```bash
 input_phone_verify_code -code=<SMS_CODE>
 ```
@@ -80,11 +82,13 @@ input_phone_verify_code -code=<SMS_CODE>
 **For picture CAPTCHA:**
 
 First, copy the CAPTCHA image from container:
+
 ```bash
 docker cp futu-opend:/home/futu/.com.futunn.FutuOpenD/F3CNN/PicVerifyCode.png ./PicVerifyCode.png
 ```
 
 Then view the image and input the code:
+
 ```bash
 input_pic_verify_code -code=<CAPTCHA_CODE>
 ```
@@ -107,11 +111,13 @@ echo "input_phone_verify_code -code=<SMS_CODE>" | telnet localhost 22222
 **For picture CAPTCHA:**
 
 First, extract the CAPTCHA image:
+
 ```bash
 docker cp futu-opend:/home/futu/.com.futunn.FutuOpenD/F3CNN/PicVerifyCode.png ./PicVerifyCode.png
 ```
 
 Then input the code via telnet:
+
 ```bash
 echo "input_pic_verify_code -code=<CAPTCHA_CODE>" | telnet localhost 22222
 ```
@@ -150,13 +156,13 @@ read -p "Enter CAPTCHA code: " captcha_code
 
 Edit `.env`
 
-| Enviroment Variable     | Description                        |
-| ---------------------- | ---------------------------------- |
-| FUTU_ACCOUNT_ID        | Futu account ID                    |
-| FUTU_ACCOUNT_PWD       | Futu account password              |
-| FUTU_RSA_FILE_PATH     | Futu RSA file path in container    |
-| FUTU_OPEND_IP          | Futu OpenD IP in container         |
-| FUTU_OPEND_PORT        | Futu OpenD API Port in container   |
+| Enviroment Variable    | Description                             |
+| ---------------------- | --------------------------------------- |
+| FUTU_ACCOUNT_ID        | Futu account ID                         |
+| FUTU_ACCOUNT_PWD       | Futu account password                   |
+| FUTU_RSA_FILE_PATH     | Futu RSA file path in container         |
+| FUTU_OPEND_IP          | Futu OpenD IP in container              |
+| FUTU_OPEND_PORT        | Futu OpenD API Port in container        |
 | FUTU_OPEND_TELNET_PORT | Futu OpenD Telnet Port (default: 22222) |
 
 ```bash
@@ -228,6 +234,7 @@ If the container fails to start:
 FutuOpenD may prompt for two types of verification:
 
 1. **SMS verification code** (`input_phone_verify_code`)
+
    - Sent to your registered phone number
    - Input via docker attach or telnet
 
