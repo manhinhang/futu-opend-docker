@@ -10,7 +10,7 @@ Docker containerization for Futu OpenD — a trading API gateway for Futu Securi
 
 ## STRUCTURE
 
-```
+```text
 .
 ├── Dockerfile              # Multi-stage build (ubuntu/centos targets)
 ├── docker-compose.yaml     # Local dev compose
