@@ -1,29 +1,53 @@
 name: Publish Docker image
 
 on:
-  push:
-    paths-ignore:
-      - README.md
-      - LICENSE
-      - .github/workflows/check-ver-update.yml
+  workflow_run:
+    workflows: [Lint]
+    types: [completed]
+    branches: [main]
 
 permissions:
   contents: read
   packages: write
 
 jobs:
-  lint:
+  check-trigger:
     runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.check.outputs.should-run }}
+    steps:
+      - id: check
+        run: |
+          if [ "${{ github.event.workflow_run.conclusion }}" != "success" ]; then
+            echo "Lint workflow did not succeed, skipping publish"
+            echo "should-run=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "should-run=true" >> $GITHUB_OUTPUT
+
+  check-paths:
+    needs: check-trigger
+    if: needs.check-trigger.outputs.should-run == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      should-build: ${{ steps.filter.outputs.code }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install pre-commit
-        run: pip install pre-commit
-
-      - name: Run pre-commit
-        run: pre-commit run --all-files
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            code:
+              - '!README.md'
+              - '!LICENSE'
+              - '!.github/workflows/check-ver-update.yml'
+              - '!.github/workflows/lint.yml'
 
   extract-version:
+    needs: check-paths
+    if: needs.check-paths.outputs.should-build == 'true'
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.result }}
@@ -31,6 +55,8 @@ jobs:
       stable_version: ${{ steps.stable_version.outputs.result }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
       - uses: actions/github-script@v7
         id: beta_version
         with:
@@ -64,13 +90,15 @@ jobs:
       matrix: ${{ fromJSON(needs.extract-version.outputs.matrix) }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [extract-version, lint]
+    needs: [extract-version]
     env:
       IMAGE_NAME: ghcr.io/${{ github.repository }}
       BETA_VERSION: ${{ needs.extract-version.outputs.beta_version }}
       STABLE_VERSION: ${{ needs.extract-version.outputs.stable_version }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Docker login
         uses: docker/login-action@v3
@@ -171,7 +199,6 @@ jobs:
           fi
 
       - name: Push Docker image
-        if: github.ref == 'refs/heads/main'
         run: |
           docker push ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ matrix.FUTU_OPEND_VER }}
           docker push ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ steps.tag_suffix.outputs.result }}
