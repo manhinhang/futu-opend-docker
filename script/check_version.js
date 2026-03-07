@@ -120,11 +120,25 @@ function parseOpenDReleases (initialState) {
   return initialState.download.openDRelease
 }
 
+function isBetaRelease (releaseData) {
+  if (!releaseData) return false
+  const keywords = ['beta', 'test', '测试', '測試']
+  const hasKeyword = (t) => t && keywords.some((k) => t.toLowerCase().includes(k))
+  const arrHasKeyword = (arr) => Array.isArray(arr) && arr.some(hasKeyword)
+
+  return (
+    arrHasKeyword(releaseData.description) ||
+    arrHasKeyword(releaseData.descriptionTc) ||
+    arrHasKeyword(releaseData.descriptionEn)
+  )
+}
+
 function getBetaVersion (document, initialState) {
   // Try parsing from INITIAL_STATE first (more reliable)
   if (initialState) {
     const releases = parseOpenDReleases(initialState)
-    const betaRelease = releases.find((r) => r.isBeta === 1)
+    // isBeta flag often just means "NEW" in the UI, verify with description
+    const betaRelease = releases.find((r) => r.isBeta === 1 && isBetaRelease(r))
     if (betaRelease) {
       return betaRelease.version
     }
