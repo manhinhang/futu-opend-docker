@@ -17,3 +17,9 @@ services:
       - $LOCAL_RSA_FILE_PATH:/.futu/futu.pem
     env_file:
       - .env
+    healthcheck:
+      test: ["CMD", "bash", "-c", "</dev/tcp/127.0.0.1/11111"]
+      interval: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 120s

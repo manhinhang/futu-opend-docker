@@ -169,6 +169,24 @@ Edit `.env`
 docker compose up -d
 ```
 
+### Healthcheck
+
+The container includes a healthcheck that monitors the FutuOpenD API port:
+
+| Setting       | Value                               | Description                              |
+| ------------- | ----------------------------------- | ---------------------------------------- |
+| test          | `</dev/tcp/127.0.0.1/11111`         | TCP connection test to API port          |
+| interval      | 60s                                 | Check every 60 seconds                   |
+| timeout       | 10s                                 | Timeout for each check                   |
+| retries       | 5                                   | Mark unhealthy after 5 failures          |
+| start_period  | 120s                                | Grace period for container startup       |
+
+Check container health status:
+
+```bash
+docker ps --format "table {{.Names}}\t{{.Status}}"
+```
+
 Then enter verification codes when prompted:
 
 **Using docker attach:**
