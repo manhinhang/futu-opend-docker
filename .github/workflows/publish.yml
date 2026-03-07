@@ -12,6 +12,17 @@ permissions:
   packages: write
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Run pre-commit
+        run: pre-commit run --all-files
+
   extract-version:
     runs-on: ubuntu-latest
     outputs:
@@ -53,7 +64,7 @@ jobs:
       matrix: ${{ fromJSON(needs.extract-version.outputs.matrix) }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: extract-version
+    needs: [extract-version, lint]
     env:
       IMAGE_NAME: ghcr.io/${{ github.repository }}
       BETA_VERSION: ${{ needs.extract-version.outputs.beta_version }}
