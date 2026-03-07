@@ -24,48 +24,48 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           echo "Checking PR #$PR_NUMBER for auto-merge eligibility..."
-          
+
           # Get PR status
           PR_STATUS=$(gh pr view "$PR_NUMBER" --json state,mergeable,mergeStateStatus --jq '{state: .state, mergeable: .mergeable, mergeStateStatus: .mergeStateStatus}')
-          
+
           echo "PR Status: $PR_STATUS"
-          
+
           STATE=$(echo "$PR_STATUS" | jq -r '.state')
           MERGEABLE=$(echo "$PR_STATUS" | jq -r '.mergeable')
           MERGE_STATE=$(echo "$PR_STATUS" | jq -r '.mergeStateStatus')
-          
+
           if [ "$STATE" != "OPEN" ]; then
             echo "PR is not open, skipping"
             exit 0
           fi
-          
+
           if [ "$MERGEABLE" != "MERGEABLE" ]; then
             echo "PR is not mergeable (status: $MERGEABLE), skipping"
             exit 0
           fi
-          
+
           # Check if all required checks passed
           CHECKS=$(gh pr checks "$PR_NUMBER" 2>&1 || echo "no checks")
           echo "Check status: $CHECKS"
-          
+
           if echo "$CHECKS" | grep -q "fail"; then
             echo "❌ Some checks failed, skipping auto-merge"
             exit 0
           fi
-          
+
           if echo "$CHECKS" | grep -q "pending"; then
             echo "⏳ Some checks are still pending, skipping auto-merge"
             exit 0
           fi
-          
+
           # If we get here, all checks passed
           echo "✅ All checks passed!"
-          
+
           # Wait a moment to ensure auto-merge is configured
           sleep 5
-          
+
           # Attempt to merge
           echo "Attempting to merge PR #$PR_NUMBER..."
           gh pr merge "$PR_NUMBER" --squash --delete-branch || echo "Auto-merge will handle this"
-          
+
           echo "✅ Done!"

@@ -46,34 +46,34 @@ jobs:
             else
               git config --global user.name "github-actions[bot]"
               git config --global user.email "github-actions[bot]@users.noreply.github.com"
-              
+
               EXISTING_PRS=$(gh pr list --search "Update Futu OpenD version" --state open --json number --jq ".[].number")
-              
+
               if [ -n "$EXISTING_PRS" ]; then
                 echo "Closing existing PR(s)..."
                 echo "$EXISTING_PRS" | xargs -I {} gh pr close {} --delete-branch || true
               fi
-              
+
               git checkout -b update-futu-opend-version
               git add opend_version.json
               git commit -m "Update Futu OpenD version"
-              
+
               git push origin update-futu-opend-version
-              
+
               PR_URL=$(gh pr create \
                 --title "🤖 Update Futu OpenD version" \
                 --body "Automated version update. This PR will be automatically merged once all CI/CD checks pass." \
                 --base main)
-              
+
               PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
-              
+
               echo ""
               echo "✅ Pull Request created: $PR_URL"
               echo ""
-              
+
               echo "Enabling auto-merge for PR #$PR_NUMBER..."
               gh pr merge "$PR_NUMBER" --auto --squash --delete-branch
-              
+
               echo ""
               echo "✅ Auto-merge enabled!"
               echo "   PR will automatically merge when CI/CD checks pass"

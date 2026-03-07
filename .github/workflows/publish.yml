@@ -60,14 +60,14 @@ jobs:
       STABLE_VERSION: ${{ needs.extract-version.outputs.stable_version }}
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Docker login
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Set tag suffix
         id: tag_suffix
         uses: actions/github-script@v7
@@ -79,7 +79,7 @@ jobs:
             } else {
                 return "stable";
             }
-      
+
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
@@ -92,7 +92,7 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ matrix.FUTU_OPEND_VER }}
             ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ steps.tag_suffix.outputs.result }}
-      
+
       - name: Validate Docker image
         run: |
           echo "=== Starting container for validation ==="
@@ -101,9 +101,9 @@ jobs:
             -e FUTU_ACCOUNT_ID="" \
             -e FUTU_ACCOUNT_PWD="" \
             ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ matrix.FUTU_OPEND_VER }}
-          
+
           echo "Waiting for FutuOpenD to start (timeout: 60s)..."
-          
+
           # Wait for health check to initialize
           timeout 60s sh -c '
             until docker inspect --format="{{.State.Health.Status}}" futu-opend-test 2>/dev/null | grep -qE "(starting|healthy|unhealthy)"; do
@@ -111,10 +111,10 @@ jobs:
               sleep 2
             done
           '
-          
+
           # Give process time to start
           sleep 5
-          
+
           # Check if process started (validates binary works)
           echo "Checking if FutuOpenD process started..."
           if timeout 10s sh -c 'until docker exec futu-opend-test pgrep FutuOpenD 2>/dev/null; do sleep 1; done'; then
@@ -124,23 +124,23 @@ jobs:
             echo "⚠ FutuOpenD process did not start within timeout"
             PROCESS_STARTED=false
           fi
-          
+
           # Show logs for debugging
           echo ""
           echo "=== Container logs ==="
           docker logs futu-opend-test
-          
+
           # Check exit code
           EXIT_CODE=$(docker inspect --format="{{.State.ExitCode}}" futu-opend-test 2>/dev/null || echo "unknown")
           echo ""
           echo "=== Container exit code: $EXIT_CODE ==="
-          
+
           # Cleanup
           echo ""
           echo "Cleaning up test container..."
           docker stop futu-opend-test 2>/dev/null || true
           docker rm futu-opend-test 2>/dev/null || true
-          
+
           # Validation criteria for CI:
           # - Exit code 0 (still running) or 14 (login failed - expected without credentials)
           # - Process started at some point
@@ -158,7 +158,7 @@ jobs:
             echo "   - Unexpected exit code: $EXIT_CODE"
             exit 1
           fi
-      
+
       - name: Push Docker image
         if: github.ref == 'refs/heads/main'
         run: |

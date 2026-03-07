@@ -106,4 +106,3 @@ FROM final-centos-image AS final-centos-target
 
 # Default to Ubuntu if BASE_IMG is not specified or invalid
 FROM final-ubuntu-target AS final
-

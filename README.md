@@ -71,7 +71,7 @@ You can input verification codes using either `docker attach` or telnet:
 docker attach futu-opend
 ```
 
-2. Input verification code based on the type:
+1. Input verification code based on the type:
 
 **For SMS verification code:**
 
@@ -234,7 +234,6 @@ If the container fails to start:
 FutuOpenD may prompt for two types of verification:
 
 1. **SMS verification code** (`input_phone_verify_code`)
-
    - Sent to your registered phone number
    - Input via docker attach or telnet
 

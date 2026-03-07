@@ -11,18 +11,18 @@
 		<!-- Login account -->
 		<login_account>###FUTU_ACCOUNT_ID###</login_account>
 		<!-- 登录密码32位MD5加密16进制 -->
-		<!-- Login password, 32-bit MD5 encrypted hexadecimal --> 
+		<!-- Login password, 32-bit MD5 encrypted hexadecimal -->
 		<login_pwd_md5>###FUTU_ACCOUNT_PWD_MD5###</login_pwd_md5>
 		<!-- 登录密码明文，密码密文存在情况下只使用密文 -->
-		<!-- Plain text of login password. When cypher text exists, the cypher text will be used. --> 
+		<!-- Plain text of login password. When cypher text exists, the cypher text will be used. -->
 		<!-- <login_pwd>1e4331fb45089b3a520d136cb3114c6e</login_pwd> -->
 		<!-- FutuOpenD语言，en：英文，chs：简体中文 -->
 		<!-- FutuOpenD language. en: English, chs: Simplified Chinese -->
 		<lang>chs</lang>
 	<!-- 进阶参数 -->
 	<!-- Advanced parameters -->
-		<!-- FutuOpenD日志等级，no, debug, info, warning, error, fatal --> 
-		<!-- FutuOpenD log level: no, debug, info, warning, error, fatal --> 
+		<!-- FutuOpenD日志等级，no, debug, info, warning, error, fatal -->
+		<!-- FutuOpenD log level: no, debug, info, warning, error, fatal -->
 		<log_level>info</log_level>
 		<!-- API推送协议格式，0：pb, 1：json -->
 		<!-- API push protocol format. 0: pb, 1: json -->
@@ -54,7 +54,7 @@
 		<future_trade_api_time_zone>UTC+8</future_trade_api_time_zone>
 	<!-- WebSocket 专用参数 -->
 	<!-- Specific parameters for WebSocket -->
-		<!-- WebSocket监听地址, 不填默认127.0.0.1 -->	
+		<!-- WebSocket监听地址, 不填默认127.0.0.1 -->
 		<!-- WebSocket listening address. 127.0.0.1 by default -->
 		<!-- <websocket_ip>127.0.0.1</websocket_ip> -->
 		<!-- WebSocket监听端口, 不配置则不启用该功能 -->
@@ -64,20 +64,20 @@
 		<!-- WebSocket authentication key ciphertext, 32-bit MD5 encrypted hexadecimal -->
 		<!-- <websocket_key_md5>14e1b600b1fd579f47433b88e8d85291</websocket_key_md5> -->
 		<!-- WebSocket证书私钥文件路径，不配置则不启用SSL，需要和证书同时配置 -->
-		<!-- WebSocket private key file path. SSL will not work if not set. WebSocket certificate and private key need to be set at the same time -->	
+		<!-- WebSocket private key file path. SSL will not work if not set. WebSocket certificate and private key need to be set at the same time -->
 		<!-- <websocket_private_key>~/key</websocket_private_key> -->
 		<!-- WebSocket证书文件路径，不配置则不启用SSL，需要和私钥同时配置 -->
 		<!-- WebSocket certificate file path. SSL will not work if not set. WebSocket certificate and private key need to be set at the same time -->
 		<!-- <websocket_cert>~/cer</websocket_cert> -->
 	<!-- FUTU US 专用参数 -->
 	<!-- Specific parameters for FUTU US -->
-	<!-- 是否开启 防止被标记为日内交易者 的功能, 0：否，1：是-->	
-		<!-- 开启功能后，我们会在您将要被标记 PDT 时阻止您的下单，但不确保您一定不被标记。若您被标记 PDT，当您的账户权益小于$25000时，您将无法开仓。-->	
+	<!-- 是否开启 防止被标记为日内交易者 的功能, 0：否，1：是-->
+		<!-- 开启功能后，我们会在您将要被标记 PDT 时阻止您的下单，但不确保您一定不被标记。若您被标记 PDT，当您的账户权益小于$25000时，您将无法开仓。-->
 		<!-- Whether to turn on the Pattern Day Trade Protection, 0: No, 1: Yes  -->
 		<!-- When this parameter is set as 1, we will prevent you from placing orders which might mark you as a Pattern Day Trader(PDT). The Protection can not guarentee that you won't be marked as a PDT. If you are marked as a PDT, you will not be allowed to open new positions until your equity is above $25000.-->
 		<pdt_protection>1</pdt_protection>
-		<!-- 是否开启 日内交易保证金追缴预警 的功能, 0：否，1：是 -->	
-		<!-- 开启功能后，我们会在您即将开仓下单超出剩余日内交易购买力前阻止您的下单。提醒您当前开仓订单的市值大于您的剩余日内交易购买力，若您在今日平仓当前标的，您将会收到日内交易保证金追缴通知（Day-Trading Call），只能通过存入资金才能解除。 -->	
+		<!-- 是否开启 日内交易保证金追缴预警 的功能, 0：否，1：是 -->
+		<!-- 开启功能后，我们会在您即将开仓下单超出剩余日内交易购买力前阻止您的下单。提醒您当前开仓订单的市值大于您的剩余日内交易购买力，若您在今日平仓当前标的，您将会收到日内交易保证金追缴通知（Day-Trading Call），只能通过存入资金才能解除。 -->
 		<!-- Whether to turn on the Day-Trading Call Warning, 0: No, 1: Yes  -->
 		<!-- When this parameter is set as 1, we will prevent you from placing orders which might exceed your remaining day-trading buying power. We will alert you that you are placing orders that exceed your remaining day-trading buying power. If you close the positions today, you will receive a Day-Trading Call. The DT Call can ONLY be met by depositing funds in the full amount of the call.-->
 		<dtcall_confirmation>1</dtcall_confirmation>
