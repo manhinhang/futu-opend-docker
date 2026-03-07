@@ -110,7 +110,11 @@ function extractInitialState (document) {
 }
 
 function parseOpenDReleases (initialState) {
-  if (!initialState || !initialState.download || !initialState.download.openDRelease) {
+  if (
+    !initialState ||
+    !initialState.download ||
+    !initialState.download.openDRelease
+  ) {
     return []
   }
   return initialState.download.openDRelease
@@ -120,12 +124,12 @@ function getBetaVersion (document, initialState) {
   // Try parsing from INITIAL_STATE first (more reliable)
   if (initialState) {
     const releases = parseOpenDReleases(initialState)
-    const betaRelease = releases.find(r => r.isBeta === 1)
+    const betaRelease = releases.find((r) => r.isBeta === 1)
     if (betaRelease) {
       return betaRelease.version
     }
   }
-  
+
   // Fallback to DOM scraping
   const betaElement = document.querySelector(
     'div.version-number > p.version-name > span.new-icon'
@@ -141,10 +145,10 @@ function getAllVersion (document, initialState) {
   if (initialState) {
     const releases = parseOpenDReleases(initialState)
     if (releases.length > 0) {
-      return releases.map(r => r.version)
+      return releases.map((r) => r.version)
     }
   }
-  
+
   // Fallback to DOM scraping
   return Array.from(
     document.querySelectorAll(
@@ -156,7 +160,7 @@ function getAllVersion (document, initialState) {
 
 function parseVersions (document) {
   const initialState = extractInitialState(document)
-  
+
   const betaVersion = getBetaVersion(document, initialState)
   const allVersions = getAllVersion(document, initialState)
 
