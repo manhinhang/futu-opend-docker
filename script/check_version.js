@@ -91,7 +91,42 @@ async function loadDocument (url = DEFAULT_URL, options = {}) {
   )
 }
 
-function getBetaVersion (document) {
+function extractInitialState (document) {
+  const scripts = document.querySelectorAll('script')
+  for (const script of scripts) {
+    const text = script.textContent
+    const prefix = 'window.__INITIAL_STATE__='
+    const idx = text.indexOf(prefix)
+    if (idx !== -1) {
+      const jsonStr = text.slice(idx + prefix.length)
+      try {
+        return JSON.parse(jsonStr)
+      } catch (e) {
+        continue
+      }
+    }
+  }
+  return null
+}
+
+function parseOpenDReleases (initialState) {
+  if (!initialState || !initialState.download || !initialState.download.openDRelease) {
+    return []
+  }
+  return initialState.download.openDRelease
+}
+
+function getBetaVersion (document, initialState) {
+  // Try parsing from INITIAL_STATE first (more reliable)
+  if (initialState) {
+    const releases = parseOpenDReleases(initialState)
+    const betaRelease = releases.find(r => r.isBeta === 1)
+    if (betaRelease) {
+      return betaRelease.version
+    }
+  }
+  
+  // Fallback to DOM scraping
   const betaElement = document.querySelector(
     'div.version-number > p.version-name > span.new-icon'
   )
@@ -101,7 +136,16 @@ function getBetaVersion (document) {
   return versionSpan.textContent.replace('Ver.', '').trim()
 }
 
-function getAllVersion (document) {
+function getAllVersion (document, initialState) {
+  // Try parsing from INITIAL_STATE first (more reliable)
+  if (initialState) {
+    const releases = parseOpenDReleases(initialState)
+    if (releases.length > 0) {
+      return releases.map(r => r.version)
+    }
+  }
+  
+  // Fallback to DOM scraping
   return Array.from(
     document.querySelectorAll(
       'div.version-number > p.version-name > span.version'
@@ -111,8 +155,10 @@ function getAllVersion (document) {
 }
 
 function parseVersions (document) {
-  const betaVersion = getBetaVersion(document)
-  const allVersions = getAllVersion(document)
+  const initialState = extractInitialState(document)
+  
+  const betaVersion = getBetaVersion(document, initialState)
+  const allVersions = getAllVersion(document, initialState)
 
   if (allVersions.length === 0) {
     throw new VersionFetchError('No versions found on page')
