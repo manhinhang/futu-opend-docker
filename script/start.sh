@@ -27,4 +27,4 @@ else
 	sed -i "s|<telnet_port>.*<\/telnet_port>|<!-- <telnet_port>22222</telnet_port> -->|" $FUTU_OPEND_XML_PATH
 fi
 
-/bin/FutuOpenD -config=$FUTU_OPEND_XML_PATH
+/bin/FutuOpenD -cfg_file=$FUTU_OPEND_XML_PATH
