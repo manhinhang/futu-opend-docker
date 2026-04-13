@@ -1,9 +1,7 @@
 name: Publish Docker image
 
 on:
-  workflow_run:
-    workflows: [Lint]
-    types: [completed]
+  push:
     branches: [main]
 
 permissions:
@@ -11,30 +9,14 @@ permissions:
   packages: write
 
 jobs:
-  check-trigger:
-    runs-on: ubuntu-latest
-    outputs:
-      should-run: ${{ steps.check.outputs.should-run }}
-    steps:
-      - id: check
-        run: |
-          if [ "${{ github.event.workflow_run.conclusion }}" != "success" ]; then
-            echo "Lint workflow did not succeed, skipping publish"
-            echo "should-run=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          echo "should-run=true" >> $GITHUB_OUTPUT
-
   check-paths:
-    needs: check-trigger
-    if: needs.check-trigger.outputs.should-run == 'true'
     runs-on: ubuntu-latest
     outputs:
       should-build: ${{ steps.filter.outputs.code }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.sha }}
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -56,7 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.sha }}
       - uses: actions/github-script@v7
         id: beta_version
         with:
@@ -98,7 +80,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.sha }}
 
       - name: Docker login
         uses: docker/login-action@v3
