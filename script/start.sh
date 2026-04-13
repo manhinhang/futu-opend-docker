@@ -2,7 +2,10 @@
 
 FUTU_OPEND_RSA_FILE_PATH=/.futu/futu.pem
 FUTU_OPEND_IP=${FUTU_OPEND_IP:-$(cat /etc/hostname)}
-FUTU_ACCOUNT_PWD_MD5=$(echo -n "$FUTU_ACCOUNT_PWD" | md5sum | awk '{print $1}')
+
+if [ -z "$FUTU_ACCOUNT_PWD_MD5" ]; then
+  FUTU_ACCOUNT_PWD_MD5=$(echo -n "$FUTU_ACCOUNT_PWD" | md5sum | awk '{print $1}')
+fi
 
 echo "FUTO_ACCOUNT_ID: $FUTU_ACCOUNT_ID"
 echo "FUTU_OPEND_RSA_FILE_PATH: $FUTU_OPEND_RSA_FILE_PATH"

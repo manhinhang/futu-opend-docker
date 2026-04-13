@@ -25,25 +25,17 @@ docker pull ghcr.io/manhinhang/futu-opend-docker:ubuntu-stable
 
 ## Create a container from the image and run it
 
-> You need to create [FutuOpenD.xml](https://openapi.futunn.com/futu-api-doc/opend/opend-cmd.html) file
-> generate your own RSA key
+> Generate your own RSA key
 >
 > ```bash
 > openssl genrsa -out futu.pem 1024
 > ```
 
-PEM file should config in XML
-
-```xml
-...
-<rsa_private_key>/bin/futu.pem</rsa_private_key>
-...
-```
-
 ```bash
 docker run -it --name futu-opend-docker \
--v $(pwd)/FutuOpenD.xml:/bin/FutuOpenD.xml \
--v $(pwd)/futu.pem:/bin/futu.pem \
+-e FUTU_ACCOUNT_ID=<your_account_id> \
+-e FUTU_ACCOUNT_PWD=<your_password> \
+-v $(pwd)/futu.pem:/.futu/futu.pem \
 -p 11111:11111 \
 -p 22222:22222 \
 ghcr.io/manhinhang/futu-opend-docker
@@ -156,14 +148,14 @@ read -p "Enter CAPTCHA code: " captcha_code
 
 Edit `.env`
 
-| Enviroment Variable    | Description                             |
-| ---------------------- | --------------------------------------- |
-| FUTU_ACCOUNT_ID        | Futu account ID                         |
-| FUTU_ACCOUNT_PWD       | Futu account password                   |
-| FUTU_RSA_FILE_PATH     | Futu RSA file path in container         |
-| FUTU_OPEND_IP          | Futu OpenD IP in container              |
-| FUTU_OPEND_PORT        | Futu OpenD API Port in container        |
-| FUTU_OPEND_TELNET_PORT | Futu OpenD Telnet Port (default: 22222) |
+| Environment Variable   | Description                                                           |
+| ---------------------- | --------------------------------------------------------------------- |
+| FUTU_ACCOUNT_ID        | Futu account ID                                                       |
+| FUTU_ACCOUNT_PWD       | Futu account password (ignored if FUTU_ACCOUNT_PWD_MD5 is set)        |
+| FUTU_ACCOUNT_PWD_MD5   | Futu account password MD5 hash (takes priority over FUTU_ACCOUNT_PWD) |
+| FUTU_OPEND_IP          | Futu OpenD IP in container                                            |
+| FUTU_OPEND_PORT        | Futu OpenD API Port in container                                      |
+| FUTU_OPEND_TELNET_PORT | Futu OpenD Telnet Port (default: 22222)                               |
 
 ```bash
 docker compose up -d
@@ -171,15 +163,15 @@ docker compose up -d
 
 ### Healthcheck
 
-The container includes a healthcheck that monitors the FutuOpenD API port:
+The container includes a healthcheck that monitors the FutuOpenD process:
 
-| Setting      | Value                       | Description                        |
-| ------------ | --------------------------- | ---------------------------------- |
-| test         | `</dev/tcp/127.0.0.1/11111` | TCP connection test to API port    |
-| interval     | 60s                         | Check every 60 seconds             |
-| timeout      | 10s                         | Timeout for each check             |
-| retries      | 5                           | Mark unhealthy after 5 failures    |
-| start_period | 120s                        | Grace period for container startup |
+| Setting      | Value             | Description                        |
+| ------------ | ----------------- | ---------------------------------- |
+| test         | `pgrep FutuOpenD` | Check FutuOpenD process is running |
+| interval     | 30s               | Check every 30 seconds             |
+| timeout      | 600s              | Timeout for each check             |
+| retries      | 3                 | Mark unhealthy after 3 failures    |
+| start_period | 180s              | Grace period for container startup |
 
 Check container health status:
 
@@ -243,8 +235,8 @@ If you encounter download failures during build:
 
 If the container fails to start:
 
-1. **RSA key**: Ensure `futu.pem` exists and is properly mounted
-2. **Config file**: Verify `FutuOpenD.xml` is valid XML
+1. **RSA key**: Ensure `futu.pem` exists and is properly mounted at `/.futu/futu.pem`
+2. **Environment variables**: Verify `FUTU_ACCOUNT_ID` and either `FUTU_ACCOUNT_PWD` or `FUTU_ACCOUNT_PWD_MD5` are set
 3. **Verification required**: First run may require verification codes
 
 ### Verification codes
