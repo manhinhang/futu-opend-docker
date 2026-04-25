@@ -94,14 +94,24 @@ function preflight ({ skipEnvCredCheck = false } = {}) {
 function assertEnvCredentials () {
   const missing = ['FUTU_ACCOUNT_ID', 'FUTU_ACCOUNT_PWD']
     .filter((name) => !process.env[name])
-  if (missing.length === 0) return
-  throw new Error(
-    `Missing env var(s): ${missing.join(', ')}. ` +
-    'Set them in the shell that runs the test, e.g.:\n' +
-    '  export FUTU_ACCOUNT_ID=$(op read "op://<vault>/<item>/username")\n' +
-    '  export FUTU_ACCOUNT_PWD=$(op read "op://<vault>/<item>/password")\n' +
-    'Or pre-populate .env.e2e (see docs/E2E.md).'
-  )
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing env var(s): ${missing.join(', ')}. ` +
+      'Set them in the shell that runs the test, e.g.:\n' +
+      '  export FUTU_ACCOUNT_ID=$(op read "op://<vault>/<item>/username")\n' +
+      '  export FUTU_ACCOUNT_PWD=$(op read "op://<vault>/<item>/password")\n' +
+      'Or pre-populate .env.e2e (see docs/E2E.md).'
+    )
+  }
+  const malformed = ['FUTU_ACCOUNT_ID', 'FUTU_ACCOUNT_PWD']
+    .filter((name) => /[\r\n]/.test(process.env[name]))
+  if (malformed.length > 0) {
+    throw new Error(
+      `${malformed.join(', ')} contain newline(s). ` +
+      'compose env-file is line-oriented; the embedded newline would silently ' +
+      'malform .env.e2e and OpenD would fail login with a confusing error.'
+    )
+  }
 }
 
 function readEnvCredentials () {
@@ -194,8 +204,10 @@ const LOGIN_FAIL_RE = />>>登录失败/
 //   - 2FA prompts (handled at most once via telnet)
 //   - the WS-listener-up marker (post-login signal)
 //   - login-failure markers (fail fast)
-// Falls back to host-side TCP probes for sanity but doesn't gate on them
-// (docker-proxy answers port mappings even before the inner service binds).
+// Ready when the log marker AND a TCP probe to both ports succeed —
+// the marker proves login completed; the probes catch broken port mappings.
+// (TCP alone isn't enough: docker-proxy answers SYN before the inner service
+// binds, so a connect() can succeed against an unready container.)
 async function waitForReady (timeoutMs) {
   const deadline = Date.now() + timeoutMs
 
@@ -308,7 +320,7 @@ const ctx = {
   envFileWasPreExisting: false
 }
 
-// Build (or reuse) the .env.e2e + XML inputs the compose files reference.
+// Build (or reuse) the .env.e2e the compose files reference.
 function prepareInputs () {
   const useExistingEnvFile = existsSync(ENV_FILE)
   ctx.envFileWasPreExisting = useExistingEnvFile
