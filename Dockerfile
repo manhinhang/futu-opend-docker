@@ -5,12 +5,15 @@ ARG BASE_IMG=ubuntu
 FROM ubuntu:18.04 AS base-ubuntu
 FROM centos:centos7 AS base-centos
 
-FROM base-ubuntu AS build-ubuntu
+# Build stage uses a supported Ubuntu so apt works.
+# The runtime image (final-ubuntu) keeps ubuntu:18.04 because Futu's binary
+# was published for bionic; only the downloaded tarball moves between stages.
+FROM ubuntu:22.04 AS build-ubuntu
 ARG FUTU_OPEND_VER=9.3.5308
 
 WORKDIR /tmp
 RUN apt-get update && \
-    apt-get install --no-install-recommends -y curl gnutls-bin
+    apt-get install --no-install-recommends -y curl ca-certificates
 COPY script/download_futu_opend.sh ./
 RUN chmod +x ./download_futu_opend.sh && \
     ./download_futu_opend.sh Futu_OpenD_${FUTU_OPEND_VER}_Ubuntu18.04.tar.gz && \

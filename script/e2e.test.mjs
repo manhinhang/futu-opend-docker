@@ -357,7 +357,7 @@ function prepareInputs () {
 // Bring the container up and block until OpenD has logged the post-login
 // WS-listener marker. Throws on container-exit / login-failure / timeout.
 async function setupContainer () {
-  output.write('[e2e] docker compose up -d (using prebuilt image)…\n')
+  output.write('[e2e] docker compose up -d --build…\n')
   await composeUp({
     composeFiles: COMPOSE_FILES,
     envFile: ENV_FILE,

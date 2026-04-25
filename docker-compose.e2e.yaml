@@ -16,6 +16,11 @@ services:
   futu-opend:
     build:
       context: .
+      # Use host network so apt-get inside the build can reach
+      # archive.ubuntu.com reliably — the default bridge has connectivity
+      # trouble on some local setups. Local-only (CI publish builds without
+      # this and works fine).
+      network: host
       args:
         FUTU_OPEND_VER: ${FUTU_OPEND_VER}
         BASE_IMG: ubuntu
