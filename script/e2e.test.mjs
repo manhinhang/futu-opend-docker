@@ -1,14 +1,15 @@
 // End-to-end test for the FutuOpenD docker image.
 //
-// Pulls real credentials from 1Password via `op read`, builds and starts the
-// container with the gitignored ./futu.pem, handles the first-run 2FA prompt
-// interactively, and exercises the OpenAPI surface with a live GetGlobalState
-// call.
+// Reads real credentials from FUTU_ACCOUNT_ID / FUTU_ACCOUNT_PWD env vars,
+// builds and starts the container with the gitignored ./futu.pem, handles
+// the first-run 2FA prompt interactively, and exercises the OpenAPI surface
+// with a live GetGlobalState call.
 //
 // Local-only by design. CI keeps its existing exit-code gate.
 //
 // Prerequisites:
-//   - `op` CLI signed in (`op whoami` must succeed)
+//   - FUTU_ACCOUNT_ID and FUTU_ACCOUNT_PWD env vars set
+//     (e.g. via `export FUTU_ACCOUNT_ID=$(op read "op://<vault>/<item>/username")`)
 //   - ./futu.pem exists
 //   - docker daemon running
 //
@@ -23,7 +24,6 @@ import { createInterface } from 'node:readline/promises'
 import { stdin as input, stdout as output } from 'node:process'
 import net from 'node:net'
 
-import { assertOpReady, readFutuCredentials } from './lib/op.mjs'
 import { writeE2eXml } from './lib/futu-xml.mjs'
 import {
   CONTAINER_NAME,
@@ -76,7 +76,7 @@ const debugLog = process.env.E2E_DEBUG
   ? (msg) => output.write(`[e2e:debug] ${msg}\n`)
   : () => {}
 
-function preflight ({ skipOpCheck = false } = {}) {
+function preflight ({ skipEnvCredCheck = false } = {}) {
   if (!dockerAvailable()) {
     throw new Error('docker is not installed or not on PATH')
   }
@@ -94,14 +94,34 @@ function preflight ({ skipOpCheck = false } = {}) {
       `Missing ${COMPOSE_E2E}. Re-run from a clean checkout — this file is committed.`
     )
   }
-  if (!skipOpCheck) assertOpReady()
+  if (!skipEnvCredCheck) assertEnvCredentials()
 }
 
-function writeEnvFile ({ username, password }) {
+function assertEnvCredentials () {
+  const missing = ['FUTU_ACCOUNT_ID', 'FUTU_ACCOUNT_PWD']
+    .filter((name) => !process.env[name])
+  if (missing.length === 0) return
+  throw new Error(
+    `Missing env var(s): ${missing.join(', ')}. ` +
+    'Set them in the shell that runs the test, e.g.:\n' +
+    '  export FUTU_ACCOUNT_ID=$(op read "op://<vault>/<item>/username")\n' +
+    '  export FUTU_ACCOUNT_PWD=$(op read "op://<vault>/<item>/password")\n' +
+    'Or pre-populate .env.e2e (see docs/E2E.md).'
+  )
+}
+
+function readEnvCredentials () {
+  return {
+    accountId: process.env.FUTU_ACCOUNT_ID,
+    accountPwd: process.env.FUTU_ACCOUNT_PWD
+  }
+}
+
+function writeEnvFile ({ accountId, accountPwd }) {
   // Quote values to survive special chars (compose env-file is naive).
   const lines = [
-    `FUTU_ACCOUNT_ID=${username}`,
-    `FUTU_ACCOUNT_PWD=${password}`,
+    `FUTU_ACCOUNT_ID=${accountId}`,
+    `FUTU_ACCOUNT_PWD=${accountPwd}`,
     `LOCAL_RSA_FILE_PATH=${PEM_FILE}`,
     `LOCAL_E2E_XML_PATH=${E2E_XML_PATH}`
   ]
@@ -295,14 +315,14 @@ const ctx = {
 function prepareInputs () {
   const useExistingEnvFile = existsSync(ENV_FILE)
   ctx.envFileWasPreExisting = useExistingEnvFile
-  preflight({ skipOpCheck: useExistingEnvFile })
+  preflight({ skipEnvCredCheck: useExistingEnvFile })
 
   if (useExistingEnvFile) {
-    output.write(`[e2e] using pre-populated ${ENV_FILE} (skipping op read)\n`)
+    output.write(`[e2e] using pre-populated ${ENV_FILE} (skipping env-var read)\n`)
   } else {
-    const creds = readFutuCredentials()
+    const creds = readEnvCredentials()
     output.write(
-      `[e2e] credentials from op: id length=${creds.username.length}, pwd length=${creds.password.length}\n`
+      `[e2e] credentials from env: id length=${creds.accountId.length}, pwd length=${creds.accountPwd.length}\n`
     )
     writeEnvFile(creds)
   }

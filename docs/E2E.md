@@ -1,6 +1,6 @@
 # Local end-to-end test
 
-A `node:test` suite (`script/e2e.test.mjs`) that drives the published FutuOpenD container with **real credentials** and asserts the OpenAPI WebSocket layer is actually up. Local-only — credentials live in 1Password, not the repo, not CI.
+A `node:test` suite (`script/e2e.test.mjs`) that drives the published FutuOpenD container with **real credentials** and asserts the OpenAPI WebSocket layer is actually up. Local-only — credentials are passed in via env vars, not stored in the repo, not in CI.
 
 ## Why
 
@@ -37,8 +37,8 @@ The "ready" gate before tests run waits for OpenD's log line `>>>WebSocket监听
 ```text
 e2e.test.mjs (before)
     │
-    ├── preflight()              docker, futu.pem, op CLI (or pre-populated .env.e2e)
-    ├── readFutuCredentials() ── op://<vault>/<item>/{username,password}        (script/lib/op.mjs)
+    ├── preflight()              docker, futu.pem, env-var creds (or pre-populated .env.e2e)
+    ├── readEnvCredentials() ── FUTU_ACCOUNT_ID / FUTU_ACCOUNT_PWD from process.env
     │   └── writeEnvFile()       .env.e2e (mode 0600)
     ├── writeE2eXml() ────────── /tmp/FutuOpenD-e2e.xml                          (script/lib/futu-xml.mjs)
     │                             • <websocket_ip>0.0.0.0</…>
@@ -64,8 +64,15 @@ The override file `docker-compose.e2e.yaml` does three things on top of the base
 ## Prerequisites (one-time)
 
 1. **Docker daemon running.**
-2. **1Password CLI signed in.** Run `op whoami` from the same shell you'll launch the test in — must succeed. Set `FUTU_OP_VAULT` and `FUTU_OP_ITEM` env vars in that shell (extract them from your 1Password share URL: `&v=<vault>&i=<item>`); or pass `{ vault, item }` explicitly to `readFutuCredentials`.
-   - Note: when launched from a non-interactive shell (Claude Code agent, IDE task runner, etc.), `op` may not pick up your `eval $(op signin)` session. The test handles this — see the **Pre-populating .env.e2e** subsection below.
+2. **`FUTU_ACCOUNT_ID` and `FUTU_ACCOUNT_PWD` env vars set** in the shell that runs `npm run test:e2e`. The test reads them directly from `process.env` and writes the generated `.env.e2e` itself. Source them however you like — 1Password CLI, password manager, manual export. With the `op` CLI:
+
+   ```bash
+   export FUTU_ACCOUNT_ID=$(op read "op://<vault>/<item>/username")
+   export FUTU_ACCOUNT_PWD=$(op read "op://<vault>/<item>/password")
+   ```
+
+   Replace `<vault>` and `<item>` with your own UUIDs (extract from your 1Password share URL: `&v=<vault>&i=<item>`). The test never invokes `op` — it has no opinion on where the values come from. If you can't set env vars in the launching shell (e.g. non-interactive agent), see the **Pre-populating .env.e2e** subsection below.
+
 3. **`./futu.pem` exists with mode `0644`.**
 
    ```bash
@@ -86,8 +93,9 @@ The override file `docker-compose.e2e.yaml` does three things on top of the base
 ## Quick start
 
 ```bash
-# 1. Populate .env.e2e from 1Password (one-shot).
-bash /tmp/futu-e2e-env-setup.sh   # see the inline script below if /tmp got cleaned
+# 1. Export creds in the shell. Source them however you like.
+export FUTU_ACCOUNT_ID=$(op read "op://<vault>/<item>/username")
+export FUTU_ACCOUNT_PWD=$(op read "op://<vault>/<item>/password")
 
 # 2. Run the test.
 npm install
@@ -102,34 +110,21 @@ Expected outcome on a healthy run: **6 passing**, ~30–60s total once the image
 
 ### Pre-populating `.env.e2e`
 
-The test detects an existing `.env.e2e` and skips its own `op read` step (`script/e2e.test.mjs:310-323`). Useful when:
+The test detects an existing `.env.e2e` and skips the env-var read entirely (`script/e2e.test.mjs:315-330`). Useful when:
 
-- The shell launching `npm run test:e2e` doesn't have `op` auth.
-- You want to use credentials from a different 1Password item (or a different secret store).
+- The shell launching `npm run test:e2e` can't export env vars (e.g. non-interactive agent runner).
+- You want to source credentials from somewhere other than env vars (1Password file, manual paste, etc.).
 
-Helper script (saved to `/tmp/futu-e2e-env-setup.sh` during the original session):
+Minimal `.env.e2e` template:
 
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-VAULT="<your-1password-vault-uuid>"
-ITEM="<your-1password-item-uuid>"
-PROJECT="$HOME/Documents/workspace/futu-opend-docker"
-
-cd "$PROJECT"
-
-U=$(op read "op://${VAULT}/${ITEM}/username")
-P=$(op read "op://${VAULT}/${ITEM}/password")
-
-printf 'FUTU_ACCOUNT_ID=%s\nFUTU_ACCOUNT_PWD=%s\nLOCAL_RSA_FILE_PATH=%s/futu.pem\nLOCAL_E2E_XML_PATH=/tmp/FutuOpenD-e2e.xml\n' \
-  "$U" "$P" "$PROJECT" > .env.e2e
-
-chmod 600 .env.e2e
-awk -F= '{printf "%s: len=%d\n", $1, length($2)}' .env.e2e
+FUTU_ACCOUNT_ID=<your-account-id>
+FUTU_ACCOUNT_PWD=<your-password>
+LOCAL_RSA_FILE_PATH=/absolute/path/to/futu.pem
+LOCAL_E2E_XML_PATH=/tmp/FutuOpenD-e2e.xml
 ```
 
-Substitute your `VAULT` / `ITEM` UUIDs (extract them from the 1Password share URL: `&v=<vault>&i=<item>`).
+Write it with mode `0600`. The test will leave a pre-populated `.env.e2e` alone on cleanup; only files it generated itself get unlinked.
 
 ## 2FA / SMS handling
 
@@ -148,8 +143,7 @@ The 5-minute file-drop timeout is enough for a normal SMS round-trip; the overal
 
 | File                                 | Role                                                                                                                                                                                  |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `script/e2e.test.mjs`                | The `node:test` suite + `before/after` orchestration. Holds `waitForReady`, `wsHandshake`, `tcpProbe`, and the SMS handlers.                                                          |
-| `script/lib/op.mjs`                  | Wraps `op read` via `execFileSync`. Exports `assertOpReady`, `readFutuCredentials({ vault, item })`. Vault and item UUIDs come from `FUTU_OP_VAULT` / `FUTU_OP_ITEM` env vars.        |
+| `script/e2e.test.mjs`                | The `node:test` suite + `before/after` orchestration. Holds `waitForReady`, `wsHandshake`, `tcpProbe`, and the SMS handlers. Reads `FUTU_ACCOUNT_ID`/`FUTU_ACCOUNT_PWD` from env.     |
 | `script/lib/futu-xml.mjs`            | Generates `/tmp/FutuOpenD-e2e.xml`. Uncomments `<websocket_port>` and replaces / injects `<websocket_ip>0.0.0.0</websocket_ip>` so docker port mapping can reach it.                  |
 | `script/lib/docker.mjs`              | `composeUp`/`composeDown`, `inspectHealth`/`inspectExitCode`, `getLogs`, `pgrepFutuOpend`, `tailLogs(container, onLine)`, and `sendTelnetCommand(line)`.                              |
 | `script/lib/_pending/futu-probe.mjs` | **Not active.** Stub for the future SDK round-trip experiment — references the `futu-api` npm package, which is intentionally not in `package.json`. See [Future work](#future-work). |

@@ -4,8 +4,9 @@
 #   The local Dockerfile builds Ubuntu 18.04 (bionic) which is EOL and can no
 #   longer fetch packages from archive.ubuntu.com. The published image was
 #   built before bionic EOL on cached layers and still runs fine.
-# - Reads container env from .env.e2e (generated at test start with creds
-#   pulled from 1Password). The base compose uses .env, which has empty values.
+# - Reads container env from .env.e2e (generated at test start from
+#   FUTU_ACCOUNT_ID / FUTU_ACCOUNT_PWD env vars). The base compose uses .env,
+#   which has empty values.
 # - Adds the WebSocket port (33333) so the futu-api npm SDK can reach OpenD.
 # - Overlays /bin/FutuOpenD.xml with /tmp/FutuOpenD-e2e.xml (generated
 #   variant with <websocket_port> uncommented).
