@@ -43,6 +43,7 @@ const ENV_FILE = resolve(PROJECT_DIR, '.env.e2e')
 const PEM_FILE = resolve(PROJECT_DIR, 'futu.pem')
 const COMPOSE_BASE = resolve(PROJECT_DIR, 'docker-compose.yaml')
 const COMPOSE_E2E = resolve(PROJECT_DIR, 'docker-compose.e2e.yaml')
+const OPEND_VERSION_FILE = resolve(PROJECT_DIR, 'opend_version.json')
 
 const WS_PORT = 33333
 const API_PORT = 11111
@@ -88,6 +89,11 @@ function preflight ({ skipEnvCredCheck = false } = {}) {
       `Missing ${COMPOSE_E2E}. Re-run from a clean checkout — this file is committed.`
     )
   }
+  if (!existsSync(OPEND_VERSION_FILE)) {
+    throw new Error(
+      `Missing ${OPEND_VERSION_FILE}. Re-run from a clean checkout — this file is committed.`
+    )
+  }
   if (!skipEnvCredCheck) assertEnvCredentials()
 }
 
@@ -121,16 +127,27 @@ function readEnvCredentials () {
   }
 }
 
+function readStableOpendVersion () {
+  const raw = JSON.parse(readFileSync(OPEND_VERSION_FILE, 'utf8'))
+  if (!raw.stableVersion) {
+    throw new Error(`opend_version.json missing "stableVersion" key (read from ${OPEND_VERSION_FILE})`)
+  }
+  return raw.stableVersion
+}
+
 function writeEnvFile ({ accountId, accountPwd }) {
   // Quote values to survive special chars (compose env-file is naive).
   // FUTU_OPEND_WEBSOCKET_PORT/_IP are read by start.sh inside the container
   // to enable the WebSocket listener (see script/start.sh).
+  // FUTU_OPEND_VER is read by docker-compose.e2e.yaml's build.args so the
+  // image is built against the version in opend_version.json.
   const lines = [
     `FUTU_ACCOUNT_ID=${accountId}`,
     `FUTU_ACCOUNT_PWD=${accountPwd}`,
     `LOCAL_RSA_FILE_PATH=${PEM_FILE}`,
     `FUTU_OPEND_WEBSOCKET_PORT=${WS_PORT}`,
-    'FUTU_OPEND_WEBSOCKET_IP=0.0.0.0'
+    'FUTU_OPEND_WEBSOCKET_IP=0.0.0.0',
+    `FUTU_OPEND_VER=${readStableOpendVersion()}`
   ]
   writeFileSync(ENV_FILE, lines.join('\n') + '\n', { mode: 0o600 })
 }

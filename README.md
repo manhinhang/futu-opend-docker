@@ -158,6 +158,7 @@ Edit `.env`
 | FUTU_OPEND_TELNET_PORT    | Futu OpenD Telnet Port (default: 22222)                                                           |
 | FUTU_OPEND_WEBSOCKET_PORT | Enable WebSocket listener on this port (default: disabled). Also publish the port in compose.     |
 | FUTU_OPEND_WEBSOCKET_IP   | WebSocket bind address (default: 0.0.0.0 when FUTU_OPEND_WEBSOCKET_PORT is set, else not applied) |
+| FUTU_OPEND_VER            | OpenD version to build (compose `build.args`). Defaulted in `.env`; mirrors `opend_version.json`. |
 
 ```bash
 docker compose up -d

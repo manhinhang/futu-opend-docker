@@ -19,7 +19,7 @@ export function dockerAvailable () {
 export async function composeUp ({ composeFiles, envFile, projectDir }) {
   const args = []
   for (const f of composeFiles) args.push('-f', f)
-  args.push('--env-file', envFile, 'up', '-d', '--force-recreate')
+  args.push('--env-file', envFile, 'up', '-d', '--build', '--force-recreate')
   await execFileP('docker', ['compose', ...args], {
     cwd: projectDir,
     maxBuffer: 16 * 1024 * 1024

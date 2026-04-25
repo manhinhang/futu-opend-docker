@@ -3,7 +3,7 @@ services:
     build:
       context: .
       args:
-        FUTU_OPEND_VER: 8.2.4218
+        FUTU_OPEND_VER: ${FUTU_OPEND_VER}
         BASE_IMG: ubuntu
     container_name: futu-opend
     stdin_open: true

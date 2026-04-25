@@ -1,9 +1,8 @@
 # Compose override used only by the local e2e test (script/e2e.test.mjs).
 #
-# - Pulls the prebuilt published image instead of rebuilding from source.
-#   The local Dockerfile builds Ubuntu 18.04 (bionic) which is EOL and can no
-#   longer fetch packages from archive.ubuntu.com. The published image was
-#   built before bionic EOL on cached layers and still runs fine.
+# - Builds a fresh image from the in-tree Dockerfile so the test exercises
+#   this branch's start.sh (the published image's start.sh may predate the
+#   env-driven WebSocket block from commit bdf6123).
 # - Reads container env from .env.e2e (generated at test start from
 #   FUTU_ACCOUNT_ID / FUTU_ACCOUNT_PWD env vars). The base compose uses .env,
 #   which has empty values.
@@ -15,9 +14,11 @@
 
 services:
   futu-opend:
-    image: ${E2E_IMAGE:-ghcr.io/manhinhang/futu-opend-docker:ubuntu-stable}
-    build: !reset null
-    pull_policy: missing
+    build:
+      context: .
+      args:
+        FUTU_OPEND_VER: ${FUTU_OPEND_VER}
+        BASE_IMG: ubuntu
     env_file:
       - !reset null
       - .env.e2e

@@ -37,14 +37,17 @@ The "ready" gate before tests run waits for OpenD's log line `>>>WebSocket监听
 ```text
 e2e.test.mjs (before)
     │
-    ├── preflight()              docker, futu.pem, env-var creds (or pre-populated .env.e2e)
+    ├── preflight()              docker, futu.pem, opend_version.json, env-var creds
+    │                             (or pre-populated .env.e2e)
     ├── readEnvCredentials() ── FUTU_ACCOUNT_ID / FUTU_ACCOUNT_PWD from process.env
     │   └── writeEnvFile()       .env.e2e (mode 0600)
     │                             • FUTU_ACCOUNT_ID / FUTU_ACCOUNT_PWD (login)
     │                             • LOCAL_RSA_FILE_PATH (host bind-mount)
     │                             • FUTU_OPEND_WEBSOCKET_PORT=33333 / FUTU_OPEND_WEBSOCKET_IP=0.0.0.0
     │                               (read by start.sh inside the container)
-    ├── composeUp() ──────────── docker compose                                  (script/lib/docker.mjs)
+    │                             • FUTU_OPEND_VER (sourced from opend_version.json's
+    │                               stableVersion; consumed by compose build.args)
+    ├── composeUp() ──────────── docker compose --build                          (script/lib/docker.mjs)
     │                             -f docker-compose.yaml -f docker-compose.e2e.yaml
     └── waitForReady()           tail logs → gate on >>>WebSocket监听地址 / fail-fast on >>>登录失败
                                  along the way: detect 2FA prompt → file-drop or TTY prompt
@@ -57,7 +60,7 @@ after → fullCleanup() → composeDown -v [+ rm .env.e2e if generated]
 
 The override file `docker-compose.e2e.yaml` does three things on top of the base `docker-compose.yaml`:
 
-1. Swaps `build:` for `image: ghcr.io/manhinhang/futu-opend-docker:ubuntu-stable` (the local Dockerfile builds Ubuntu 18.04 / bionic, which is EOL — `apt-get` against `archive.ubuntu.com` no longer resolves).
+1. Inherits `build:` (with `FUTU_OPEND_VER` from `opend_version.json` via `.env.e2e`) so the test exercises this branch's `start.sh` and `Dockerfile`. `composeUp` passes `--build` so the image is always fresh.
 2. Resets `env_file:` to `.env.e2e` so the base `.env` (with empty creds) doesn't leak in.
 3. Adds the WebSocket port mapping (`33333:33333`). The listener itself is enabled inside the container by `start.sh` reading `FUTU_OPEND_WEBSOCKET_PORT` from `.env.e2e`.
 
@@ -123,6 +126,7 @@ FUTU_ACCOUNT_PWD=<your-password>
 LOCAL_RSA_FILE_PATH=/absolute/path/to/futu.pem
 FUTU_OPEND_WEBSOCKET_PORT=33333
 FUTU_OPEND_WEBSOCKET_IP=0.0.0.0
+FUTU_OPEND_VER=10.2.6208   # mirror opend_version.json's stableVersion
 ```
 
 Write it with mode `0600`. The test will leave a pre-populated `.env.e2e` alone on cleanup; only files it generated itself get unlinked.
@@ -169,11 +173,11 @@ E2E_DEBUG=1 npm run test:e2e
 
 ## Known issues & gotchas
 
-### Bionic Dockerfile can't rebuild
+### Bionic Dockerfile may fail apt-get on a fresh build
 
-The repo's `Dockerfile` builds from `ubuntu:18.04`, which went EOL in May 2023; `archive.ubuntu.com` no longer serves bionic. `docker compose up --build` fails on `apt-get update`. The override pulls the published `ghcr.io/manhinhang/futu-opend-docker:ubuntu-stable` image instead, whose layers were cached pre-EOL and still work.
+The `Dockerfile`'s `build-ubuntu` stage runs `apt-get update && apt-get install curl gnutls-bin` against `ubuntu:18.04` (bionic, EOL May 2023). `archive.ubuntu.com` may no longer serve bionic packages, so a fresh build can fail at that step. Local cached `build-ubuntu` layers usually let the e2e build succeed; the first build on a clean machine is the risk.
 
-**Fix:** bump the base image off bionic in `Dockerfile` (e.g. ubuntu:22.04 / debian:12) and verify FutuOpenD's binary still runs against the newer libc. Then add `--build` back to `composeUp` in `script/lib/docker.mjs`.
+**Workaround if it fails:** pull the published image once (`docker pull ghcr.io/manhinhang/futu-opend-docker:ubuntu-stable`) and tag it with the project's expected name so compose reuses it. **Permanent fix:** bump the base image off bionic in `Dockerfile` (e.g. ubuntu:22.04 / debian:12) and verify FutuOpenD's binary still runs against the newer libc.
 
 ### Compose healthcheck is misconfigured
 
