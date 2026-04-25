@@ -1,0 +1,26 @@
+# Compose override used only by the local e2e test (script/e2e.test.mjs).
+#
+# - Pulls the prebuilt published image instead of rebuilding from source.
+#   The local Dockerfile builds Ubuntu 18.04 (bionic) which is EOL and can no
+#   longer fetch packages from archive.ubuntu.com. The published image was
+#   built before bionic EOL on cached layers and still runs fine.
+# - Reads container env from .env.e2e (generated at test start with creds
+#   pulled from 1Password). The base compose uses .env, which has empty values.
+# - Adds the WebSocket port (33333) so the futu-api npm SDK can reach OpenD.
+# - Overlays /bin/FutuOpenD.xml with /tmp/FutuOpenD-e2e.xml (generated
+#   variant with <websocket_port> uncommented).
+#
+# Compose with: docker compose -f docker-compose.yaml -f docker-compose.e2e.yaml ...
+
+services:
+  futu-opend:
+    image: ${E2E_IMAGE:-ghcr.io/manhinhang/futu-opend-docker:ubuntu-stable}
+    build: !reset null
+    pull_policy: missing
+    env_file:
+      - !reset null
+      - .env.e2e
+    ports:
+      - "33333:33333"
+    volumes:
+      - ${LOCAL_E2E_XML_PATH}:/bin/FutuOpenD.xml
