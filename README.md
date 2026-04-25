@@ -254,6 +254,12 @@ FutuOpenD may prompt for two types of verification:
 
 **Tip**: Use telnet method for automation - see [Input verification codes](#input-verification-codes) section for details.
 
+## Local end-to-end test
+
+A `node:test` suite that pulls real credentials from 1Password, drives a real login (with SMS support), and asserts the OpenAPI WebSocket layer is up. Local-only — `npm run test:e2e`.
+
+See [docs/E2E.md](docs/E2E.md) for prerequisites, architecture, and troubleshooting.
+
 ## Disclaimer
 
 This project is not affiliated with [Futu Securities International (Hong Kong) Limited](https://www.futuhk.com/).
