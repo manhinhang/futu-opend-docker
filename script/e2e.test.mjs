@@ -24,7 +24,6 @@ import { createInterface } from 'node:readline/promises'
 import { stdin as input, stdout as output } from 'node:process'
 import net from 'node:net'
 
-import { writeE2eXml } from './lib/futu-xml.mjs'
 import {
   CONTAINER_NAME,
   composeUp,
@@ -44,8 +43,6 @@ const ENV_FILE = resolve(PROJECT_DIR, '.env.e2e')
 const PEM_FILE = resolve(PROJECT_DIR, 'futu.pem')
 const COMPOSE_BASE = resolve(PROJECT_DIR, 'docker-compose.yaml')
 const COMPOSE_E2E = resolve(PROJECT_DIR, 'docker-compose.e2e.yaml')
-const E2E_XML_PATH = '/tmp/FutuOpenD-e2e.xml'
-const SOURCE_XML = resolve(PROJECT_DIR, 'FutuOpenD.xml')
 
 const WS_PORT = 33333
 const API_PORT = 11111
@@ -86,9 +83,6 @@ function preflight ({ skipEnvCredCheck = false } = {}) {
       '  openssl genrsa -out futu.pem 1024'
     )
   }
-  if (!existsSync(SOURCE_XML)) {
-    throw new Error(`Missing source XML at ${SOURCE_XML}`)
-  }
   if (!existsSync(COMPOSE_E2E)) {
     throw new Error(
       `Missing ${COMPOSE_E2E}. Re-run from a clean checkout — this file is committed.`
@@ -119,11 +113,14 @@ function readEnvCredentials () {
 
 function writeEnvFile ({ accountId, accountPwd }) {
   // Quote values to survive special chars (compose env-file is naive).
+  // FUTU_OPEND_WEBSOCKET_PORT/_IP are read by start.sh inside the container
+  // to enable the WebSocket listener (see script/start.sh).
   const lines = [
     `FUTU_ACCOUNT_ID=${accountId}`,
     `FUTU_ACCOUNT_PWD=${accountPwd}`,
     `LOCAL_RSA_FILE_PATH=${PEM_FILE}`,
-    `LOCAL_E2E_XML_PATH=${E2E_XML_PATH}`
+    `FUTU_OPEND_WEBSOCKET_PORT=${WS_PORT}`,
+    'FUTU_OPEND_WEBSOCKET_IP=0.0.0.0'
   ]
   writeFileSync(ENV_FILE, lines.join('\n') + '\n', { mode: 0o600 })
 }
@@ -326,9 +323,6 @@ function prepareInputs () {
     )
     writeEnvFile(creds)
   }
-
-  writeE2eXml(SOURCE_XML, E2E_XML_PATH)
-  output.write(`[e2e] generated WebSocket-enabled XML at ${E2E_XML_PATH}\n`)
 }
 
 // Bring the container up and block until OpenD has logged the post-login
@@ -361,10 +355,8 @@ async function fullCleanup () {
   }
   // Only remove the env file if we generated it. Don't blow away a
   // pre-populated one the user pasted credentials into.
-  const toRemove = [E2E_XML_PATH]
-  if (!ctx.envFileWasPreExisting) toRemove.push(ENV_FILE)
-  for (const path of toRemove) {
-    try { unlinkSync(path) } catch (err) { debugLog(`unlink ${path} failed: ${err.message}`) }
+  if (!ctx.envFileWasPreExisting) {
+    try { unlinkSync(ENV_FILE) } catch (err) { debugLog(`unlink ${ENV_FILE} failed: ${err.message}`) }
   }
 }
 

@@ -148,14 +148,16 @@ read -p "Enter CAPTCHA code: " captcha_code
 
 Edit `.env`
 
-| Environment Variable   | Description                                                           |
-| ---------------------- | --------------------------------------------------------------------- |
-| FUTU_ACCOUNT_ID        | Futu account ID                                                       |
-| FUTU_ACCOUNT_PWD       | Futu account password (ignored if FUTU_ACCOUNT_PWD_MD5 is set)        |
-| FUTU_ACCOUNT_PWD_MD5   | Futu account password MD5 hash (takes priority over FUTU_ACCOUNT_PWD) |
-| FUTU_OPEND_IP          | Futu OpenD IP in container                                            |
-| FUTU_OPEND_PORT        | Futu OpenD API Port in container                                      |
-| FUTU_OPEND_TELNET_PORT | Futu OpenD Telnet Port (default: 22222)                               |
+| Environment Variable      | Description                                                                                       |
+| ------------------------- | ------------------------------------------------------------------------------------------------- |
+| FUTU_ACCOUNT_ID           | Futu account ID                                                                                   |
+| FUTU_ACCOUNT_PWD          | Futu account password (ignored if FUTU_ACCOUNT_PWD_MD5 is set)                                    |
+| FUTU_ACCOUNT_PWD_MD5      | Futu account password MD5 hash (takes priority over FUTU_ACCOUNT_PWD)                             |
+| FUTU_OPEND_IP             | Futu OpenD IP in container                                                                        |
+| FUTU_OPEND_PORT           | Futu OpenD API Port in container                                                                  |
+| FUTU_OPEND_TELNET_PORT    | Futu OpenD Telnet Port (default: 22222)                                                           |
+| FUTU_OPEND_WEBSOCKET_PORT | Enable WebSocket listener on this port (default: disabled). Also publish the port in compose.     |
+| FUTU_OPEND_WEBSOCKET_IP   | WebSocket bind address (default: 0.0.0.0 when FUTU_OPEND_WEBSOCKET_PORT is set, else not applied) |
 
 ```bash
 docker compose up -d
@@ -256,7 +258,7 @@ FutuOpenD may prompt for two types of verification:
 
 ## Local end-to-end test
 
-A `node:test` suite that pulls real credentials from 1Password, drives a real login (with SMS support), and asserts the OpenAPI WebSocket layer is up. Local-only — `npm run test:e2e`.
+A `node:test` suite that takes credentials from `FUTU_ACCOUNT_ID`/`FUTU_ACCOUNT_PWD` env vars, drives a real login (with SMS support), and asserts the OpenAPI WebSocket layer is up. Local-only — `npm run test:e2e`.
 
 See [docs/E2E.md](docs/E2E.md) for prerequisites, architecture, and troubleshooting.
 

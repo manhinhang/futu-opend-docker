@@ -21,11 +21,11 @@ CI keeps its existing exit-code gate; this test complements it locally.
 
 | #   | Test (line in `script/e2e.test.mjs`)                                       | Signal                                                                                     |
 | --- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| 1   | `container is up and not in a failed state` (`:347`)                       | `docker inspect` health is not `unhealthy`/`missing`                                       |
-| 2   | `FutuOpenD process is running inside the container` (`:354`)               | `pgrep FutuOpenD` succeeds                                                                 |
-| 3   | `TCP API port is reachable from the host` (`:358`)                         | `net.connect` to `127.0.0.1:11111`                                                         |
-| 4   | `logs do not contain a login-failure marker` (`:377`)                      | None of `login fail`, `密码错误`, `登录失败`, `verify code error` in `docker logs`         |
-| 5   | `WebSocket handshake completes with HTTP 101 Switching Protocols` (`:391`) | Raw HTTP upgrade against `127.0.0.1:33333` returns `HTTP/1.1 101` + `Sec-WebSocket-Accept` |
+| 1   | `container is up and not in a failed state` (`:386`)                       | `docker inspect` health is not `unhealthy`/`missing`                                       |
+| 2   | `FutuOpenD process is running inside the container` (`:393`)               | `pgrep FutuOpenD` succeeds                                                                 |
+| 3   | `TCP API port is reachable from the host` (`:397`)                         | `net.connect` to `127.0.0.1:11111`                                                         |
+| 4   | `logs do not contain a login-failure marker` (`:422`)                      | None of `login fail`, `密码错误`, `登录失败`, `verify code error` in `docker logs`         |
+| 5   | `WebSocket handshake completes with HTTP 101 Switching Protocols` (`:436`) | Raw HTTP upgrade against `127.0.0.1:33333` returns `HTTP/1.1 101` + `Sec-WebSocket-Accept` |
 | 6   | `container still up after API exercise`                                    | Health re-inspected post-handshake                                                         |
 
 All 6 are active. A protobuf round-trip via the `futu-api` SDK was prototyped but didn't pan out on Node 24 — the prototype lives at `script/lib/_pending/futu-probe.mjs` and is not wired into the suite. See [Future work](#future-work).
@@ -40,10 +40,10 @@ e2e.test.mjs (before)
     ├── preflight()              docker, futu.pem, env-var creds (or pre-populated .env.e2e)
     ├── readEnvCredentials() ── FUTU_ACCOUNT_ID / FUTU_ACCOUNT_PWD from process.env
     │   └── writeEnvFile()       .env.e2e (mode 0600)
-    ├── writeE2eXml() ────────── /tmp/FutuOpenD-e2e.xml                          (script/lib/futu-xml.mjs)
-    │                             • <websocket_ip>0.0.0.0</…>
-    │                             • <websocket_port>33333</…>
-    │                             • <websocket_key_md5>…</…>
+    │                             • FUTU_ACCOUNT_ID / FUTU_ACCOUNT_PWD (login)
+    │                             • LOCAL_RSA_FILE_PATH (host bind-mount)
+    │                             • FUTU_OPEND_WEBSOCKET_PORT=33333 / FUTU_OPEND_WEBSOCKET_IP=0.0.0.0
+    │                               (read by start.sh inside the container)
     ├── composeUp() ──────────── docker compose                                  (script/lib/docker.mjs)
     │                             -f docker-compose.yaml -f docker-compose.e2e.yaml
     └── waitForReady()           tail logs → gate on >>>WebSocket监听地址 / fail-fast on >>>登录失败
@@ -52,14 +52,14 @@ e2e.test.mjs (before)
 
 it() × 6
 
-after → fullCleanup() → composeDown -v + rm /tmp/FutuOpenD-e2e.xml [+ .env.e2e if generated]
+after → fullCleanup() → composeDown -v [+ rm .env.e2e if generated]
 ```
 
 The override file `docker-compose.e2e.yaml` does three things on top of the base `docker-compose.yaml`:
 
 1. Swaps `build:` for `image: ghcr.io/manhinhang/futu-opend-docker:ubuntu-stable` (the local Dockerfile builds Ubuntu 18.04 / bionic, which is EOL — `apt-get` against `archive.ubuntu.com` no longer resolves).
 2. Resets `env_file:` to `.env.e2e` so the base `.env` (with empty creds) doesn't leak in.
-3. Adds the WebSocket port mapping (`33333:33333`) and bind-mounts the generated XML over `/bin/FutuOpenD.xml`.
+3. Adds the WebSocket port mapping (`33333:33333`). The listener itself is enabled inside the container by `start.sh` reading `FUTU_OPEND_WEBSOCKET_PORT` from `.env.e2e`.
 
 ## Prerequisites (one-time)
 
@@ -110,7 +110,7 @@ Expected outcome on a healthy run: **6 passing**, ~30–60s total once the image
 
 ### Pre-populating `.env.e2e`
 
-The test detects an existing `.env.e2e` and skips the env-var read entirely (`script/e2e.test.mjs:315-330`). Useful when:
+The test detects an existing `.env.e2e` and skips the env-var read entirely (`script/e2e.test.mjs:312-326`). Useful when:
 
 - The shell launching `npm run test:e2e` can't export env vars (e.g. non-interactive agent runner).
 - You want to source credentials from somewhere other than env vars (1Password file, manual paste, etc.).
@@ -121,7 +121,8 @@ Minimal `.env.e2e` template:
 FUTU_ACCOUNT_ID=<your-account-id>
 FUTU_ACCOUNT_PWD=<your-password>
 LOCAL_RSA_FILE_PATH=/absolute/path/to/futu.pem
-LOCAL_E2E_XML_PATH=/tmp/FutuOpenD-e2e.xml
+FUTU_OPEND_WEBSOCKET_PORT=33333
+FUTU_OPEND_WEBSOCKET_IP=0.0.0.0
 ```
 
 Write it with mode `0600`. The test will leave a pre-populated `.env.e2e` alone on cleanup; only files it generated itself get unlinked.
@@ -130,10 +131,10 @@ Write it with mode `0600`. The test will leave a pre-populated `.env.e2e` alone 
 
 OpenD requires an SMS verification code on first login from a new device, and Futu's "device whitelist" can wear off — be ready for it on most fresh runs.
 
-The test detects the prompt by tailing `docker logs` for any of: `input_phone_verify_code`, `verify code`, `短信验证码`, `手机验证码` (`script/e2e.test.mjs:57`). It then routes the user response one of two ways:
+The test detects the prompt by tailing `docker logs` for any of: `input_phone_verify_code`, `verify code`, `短信验证码`, `手机验证码` (`script/e2e.test.mjs:67`). It then routes the user response one of two ways:
 
 - **TTY (`input.isTTY` true)**: standard `readline` prompt.
-- **Non-TTY (Claude Code agent, CI runner, dmux pane)**: prints a banner and polls `/tmp/futu-sms-code`. Operator writes the digits to that file (`echo 123456 > /tmp/futu-sms-code`); the test consumes and `unlink`s it (`script/e2e.test.mjs:96-122`).
+- **Non-TTY (Claude Code agent, CI runner, dmux pane)**: prints a banner and polls `/tmp/futu-sms-code`. Operator writes the digits to that file (`echo 123456 > /tmp/futu-sms-code`); the test consumes and `unlink`s it (`script/e2e.test.mjs:128-154`).
 
 Either way, the code is **delivered to OpenD via telnet on port 22222** with `\r\n` line termination (`script/lib/docker.mjs` `sendTelnetCommand`). `docker attach` to PID 1 silently drops input on this image — telnet is the documented automation entrypoint per the README's "Method 2: telnet" section.
 
@@ -144,10 +145,10 @@ The 5-minute file-drop timeout is enough for a normal SMS round-trip; the overal
 | File                                 | Role                                                                                                                                                                                  |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `script/e2e.test.mjs`                | The `node:test` suite + `before/after` orchestration. Holds `waitForReady`, `wsHandshake`, `tcpProbe`, and the SMS handlers. Reads `FUTU_ACCOUNT_ID`/`FUTU_ACCOUNT_PWD` from env.     |
-| `script/lib/futu-xml.mjs`            | Generates `/tmp/FutuOpenD-e2e.xml`. Uncomments `<websocket_port>` and replaces / injects `<websocket_ip>0.0.0.0</websocket_ip>` so docker port mapping can reach it.                  |
+| `script/start.sh`                    | Runs inside the container. Sed-substitutes the XML config; if `FUTU_OPEND_WEBSOCKET_PORT` is set, also uncomments `<websocket_port>` / `<websocket_ip>` to enable the WS listener.    |
 | `script/lib/docker.mjs`              | `composeUp`/`composeDown`, `inspectHealth`/`inspectExitCode`, `getLogs`, `pgrepFutuOpend`, `tailLogs(container, onLine)`, and `sendTelnetCommand(line)`.                              |
 | `script/lib/_pending/futu-probe.mjs` | **Not active.** Stub for the future SDK round-trip experiment — references the `futu-api` npm package, which is intentionally not in `package.json`. See [Future work](#future-work). |
-| `docker-compose.e2e.yaml`            | Compose override: prebuilt image, env_file reset, WS port, XML mount.                                                                                                                 |
+| `docker-compose.e2e.yaml`            | Compose override: prebuilt image, env_file reset, WS port mapping.                                                                                                                    |
 | `package.json` (`test:e2e` script)   | `node --test --test-timeout=600000 script/e2e.test.mjs`                                                                                                                               |
 
 ### Module format
@@ -202,7 +203,7 @@ The active suite asserts the WS upgrade returns HTTP 101 — that's enough to pr
 
 - The test is **local-only**. CI keeps its existing exit-code gate (`.github/workflows/publish.yml`).
 - Each successful run consumes one Futu login session. The whitelisted-device window is short — expect SMS prompts on most fresh runs.
-- Cleanup runs in `after` and on `SIGINT`/`SIGTERM` (`script/e2e.test.mjs:298-306`); `Ctrl+C` mid-run won't leave a stray container or temp files. Pre-populated `.env.e2e` files are preserved (only generated ones get unlinked — see `ctx.envFileWasPreExisting`).
+- Cleanup runs in `after` and on `SIGINT`/`SIGTERM` (`script/e2e.test.mjs:363-373`); `Ctrl+C` mid-run won't leave a stray container or temp files. Pre-populated `.env.e2e` files are preserved (only generated ones get unlinked — see `ctx.envFileWasPreExisting`).
 
 ## Future work
 

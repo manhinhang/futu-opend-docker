@@ -7,9 +7,9 @@
 # - Reads container env from .env.e2e (generated at test start from
 #   FUTU_ACCOUNT_ID / FUTU_ACCOUNT_PWD env vars). The base compose uses .env,
 #   which has empty values.
-# - Adds the WebSocket port (33333) so the futu-api npm SDK can reach OpenD.
-# - Overlays /bin/FutuOpenD.xml with /tmp/FutuOpenD-e2e.xml (generated
-#   variant with <websocket_port> uncommented).
+# - Adds the WebSocket port mapping (33333) so the host can reach OpenD's
+#   WebSocket listener. The listener itself is enabled by start.sh inside
+#   the container when FUTU_OPEND_WEBSOCKET_PORT is set in .env.e2e.
 #
 # Compose with: docker compose -f docker-compose.yaml -f docker-compose.e2e.yaml ...
 
@@ -23,5 +23,3 @@ services:
       - .env.e2e
     ports:
       - "33333:33333"
-    volumes:
-      - ${LOCAL_E2E_XML_PATH}:/bin/FutuOpenD.xml

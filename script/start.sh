@@ -30,4 +30,14 @@ else
   sed -i "s|<telnet_port>.*<\/telnet_port>|<!-- <telnet_port>22222</telnet_port> -->|" $FUTU_OPEND_XML_PATH
 fi
 
+if [ -n "$FUTU_OPEND_WEBSOCKET_PORT" ]; then
+  FUTU_OPEND_WEBSOCKET_IP=${FUTU_OPEND_WEBSOCKET_IP:-0.0.0.0}
+  sed -i "s|<!-- <websocket_ip>.*</websocket_ip> -->|<websocket_ip>$FUTU_OPEND_WEBSOCKET_IP</websocket_ip>|" $FUTU_OPEND_XML_PATH
+  sed -i "s|<!-- <websocket_port>.*</websocket_port> -->|<websocket_port>$FUTU_OPEND_WEBSOCKET_PORT</websocket_port>|" $FUTU_OPEND_XML_PATH
+  grep -q "<websocket_port>$FUTU_OPEND_WEBSOCKET_PORT</websocket_port>" $FUTU_OPEND_XML_PATH || {
+    echo "ERROR: failed to enable websocket in $FUTU_OPEND_XML_PATH" >&2
+    exit 1
+  }
+fi
+
 /bin/FutuOpenD -cfg_file=$FUTU_OPEND_XML_PATH
