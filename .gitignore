@@ -2,3 +2,4 @@ node_modules
 super-linter-output
 report
 futu.pem
+.env.e2e

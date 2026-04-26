@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "test:unit": "node --test script/check_version.test.js",
+    "test:e2e": "node --test --test-timeout=600000 script/e2e.test.mjs"
+  },
   "dependencies": {
     "jsdom": "24.1.3"
   }
