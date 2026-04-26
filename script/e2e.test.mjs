@@ -141,10 +141,14 @@ function writeEnvFile ({ accountId, accountPwd }) {
   // to enable the WebSocket listener (see script/start.sh).
   // FUTU_OPEND_VER is read by docker-compose.e2e.yaml's build.args so the
   // image is built against the version in opend_version.json.
+  // FUTU_OPEND_IP=0.0.0.0 — the e2e override runs network_mode: host and
+  // start.sh's default `cat /etc/hostname` resolves to the host's hostname
+  // (not routable inside the container's view of the host stack).
   const lines = [
     `FUTU_ACCOUNT_ID=${accountId}`,
     `FUTU_ACCOUNT_PWD=${accountPwd}`,
     `LOCAL_RSA_FILE_PATH=${PEM_FILE}`,
+    `FUTU_OPEND_IP=0.0.0.0`,
     `FUTU_OPEND_WEBSOCKET_PORT=${WS_PORT}`,
     'FUTU_OPEND_WEBSOCKET_IP=0.0.0.0',
     `FUTU_OPEND_VER=${readStableOpendVersion()}`

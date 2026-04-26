@@ -107,6 +107,9 @@ export async function waitForHealthy (container, timeoutMs, onTick) {
 }
 
 // Tail container logs into a callback. Returns a stop() function.
+// CR chars are stripped per line — OpenD uses mid-line `\r` (terminal
+// cursor-rewrite style) on some log lines, e.g. `\r>>>\rWebSocket监听地址…`,
+// which would otherwise break substring regex matches like /\>>>WebSocket监听地址/.
 export function tailLogs (container, onLine) {
   const child = spawn('docker', ['logs', '-f', container], { stdio: ['ignore', 'pipe', 'pipe'] })
   let buf = ''
@@ -114,7 +117,7 @@ export function tailLogs (container, onLine) {
     buf += chunk.toString()
     let nl
     while ((nl = buf.indexOf('\n')) !== -1) {
-      const line = buf.slice(0, nl)
+      const line = buf.slice(0, nl).replace(/\r/g, '')
       buf = buf.slice(nl + 1)
       try { onLine(line) } catch { /* swallow listener errors */ }
     }

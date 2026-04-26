@@ -6,9 +6,15 @@
 # - Reads container env from .env.e2e (generated at test start from
 #   FUTU_ACCOUNT_ID / FUTU_ACCOUNT_PWD env vars). The base compose uses .env,
 #   which has empty values.
-# - Adds the WebSocket port mapping (33333) so the host can reach OpenD's
-#   WebSocket listener. The listener itself is enabled by start.sh inside
-#   the container when FUTU_OPEND_WEBSOCKET_PORT is set in .env.e2e.
+# - Runs with `network_mode: host` so OpenD's outbound to Futu's servers
+#   doesn't go through docker's bridge (the bridge has connectivity issues
+#   on some local setups and silently produces ">>>登录失败,网络异常" even
+#   when the account is healthy). Side effect: container ports are bound
+#   directly on the host (no port mapping needed), so FUTU_OPEND_IP must be
+#   0.0.0.0 — the container sees the host's hostname which won't resolve.
+# - The WebSocket listener is enabled by start.sh inside the container when
+#   FUTU_OPEND_WEBSOCKET_PORT is set in .env.e2e (port 33333 binds directly
+#   on the host under network_mode: host).
 #
 # Compose with: docker compose -f docker-compose.yaml -f docker-compose.e2e.yaml ...
 
@@ -24,8 +30,10 @@ services:
       args:
         FUTU_OPEND_VER: ${FUTU_OPEND_VER}
         BASE_IMG: ubuntu
+    network_mode: host
+    # Drop the base compose's `ports:` mapping — incompatible with host net,
+    # and unnecessary since the container binds host ports directly.
+    ports: !reset null
     env_file:
       - !reset null
       - .env.e2e
-    ports:
-      - "33333:33333"

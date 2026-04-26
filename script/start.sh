@@ -20,6 +20,9 @@ cp "$FUTU_OPEND_XML_SRC" "$FUTU_OPEND_XML_PATH"
 
 sed -i "s|<ip>.*<\/ip>|<ip>$FUTU_OPEND_IP</ip>|" $FUTU_OPEND_XML_PATH
 sed -i "s|<api_port>.*<\/api_port>|<api_port>$FUTU_OPEND_PORT</api_port>|" $FUTU_OPEND_XML_PATH
+# telnet_ip mirrors the API ip — under host networking, the shipped default
+# `futu-opend` doesn't resolve and telnet fails to bind silently.
+sed -i "s|<telnet_ip>.*<\/telnet_ip>|<telnet_ip>$FUTU_OPEND_IP</telnet_ip>|" $FUTU_OPEND_XML_PATH
 sed -i "s|<login_account>.*<\/login_account>|<login_account>$FUTU_ACCOUNT_ID</login_account>|" $FUTU_OPEND_XML_PATH
 sed -i "s|<login_pwd_md5>.*<\/login_pwd_md5>|<login_pwd_md5>$FUTU_ACCOUNT_PWD_MD5</login_pwd_md5>|" $FUTU_OPEND_XML_PATH
 sed -i "s|<rsa_private_key>.*<\/rsa_private_key>|<rsa_private_key>$FUTU_OPEND_RSA_FILE_PATH</rsa_private_key>|" $FUTU_OPEND_XML_PATH
