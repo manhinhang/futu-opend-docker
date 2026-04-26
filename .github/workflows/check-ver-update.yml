@@ -5,11 +5,6 @@ on:
     - cron: "0 0 * * *"
   workflow_dispatch:
 
-permissions:
-  pull-requests: read
-  contents: read
-  issues: read
-
 jobs:
   check-version:
     name: Check Version
@@ -29,59 +24,48 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        run: |
-          npm ci
+        run: npm ci
 
       - name: Check Futu OpenD Version
-        run: |
-          node script/check_version.js
+        run: node script/check_version.js
 
       - name: Sync version references
-        run: |
-          node script/update_docs_version.js
+        run: node script/update_docs_version.js
 
       - name: Create Pull Request with Auto-Merge
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ -f opend_version.json ] && [ -s opend_version.json ]; then
-            if git diff --quiet -- opend_version.json README.md CLAUDE.md AGENTS.md docs/E2E.md .env; then
-              echo "No version update needed"
-            else
-              git config --global user.name "github-actions[bot]"
-              git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          set -euo pipefail
 
-              EXISTING_PRS=$(gh pr list --search "Update Futu OpenD version" --state open --json number --jq ".[].number")
+          SYNC_FILES="opend_version.json $(node -e "console.log(require('./script/update_docs_version.js').TARGET_FILES.join(' '))")"
+          BRANCH=update-futu-opend-version
 
-              if [ -n "$EXISTING_PRS" ]; then
-                echo "Closing existing PR(s)..."
-                echo "$EXISTING_PRS" | xargs -I {} gh pr close {} --delete-branch || true
-              fi
-
-              git checkout -b update-futu-opend-version
-              git add opend_version.json README.md CLAUDE.md AGENTS.md docs/E2E.md .env
-              git commit -m "Update Futu OpenD version"
-
-              git push origin update-futu-opend-version
-
-              PR_URL=$(gh pr create \
-                --title "🤖 Update Futu OpenD version" \
-                --body "Automated version update. This PR will be automatically merged once all CI/CD checks pass." \
-                --base main)
-
-              PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
-
-              echo ""
-              echo "✅ Pull Request created: $PR_URL"
-              echo ""
-
-              echo "Enabling auto-merge for PR #$PR_NUMBER..."
-              gh pr merge "$PR_NUMBER" --auto --squash --delete-branch
-
-              echo ""
-              echo "✅ Auto-merge enabled!"
-              echo "   PR will automatically merge when CI/CD checks pass"
-            fi
-          else
-            echo "No version file found or file is empty"
+          if git diff --quiet -- $SYNC_FILES; then
+            echo "No version update needed"
+            exit 0
           fi
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          EXISTING_PRS=$(gh pr list --head "$BRANCH" --state open --json number --jq ".[].number")
+          if [ -n "$EXISTING_PRS" ]; then
+            echo "Closing existing PR(s) on $BRANCH..."
+            echo "$EXISTING_PRS" | xargs -I {} gh pr close {} --delete-branch || true
+          fi
+
+          git checkout -b "$BRANCH"
+          git add $SYNC_FILES
+          git commit -m "Update Futu OpenD version"
+          git push origin "$BRANCH"
+
+          PR_URL=$(gh pr create \
+            --title "🤖 Update Futu OpenD version" \
+            --body "Automated version update. This PR will be automatically merged once all CI/CD checks pass." \
+            --base main)
+          PR_NUMBER="${PR_URL##*/}"
+
+          echo "Pull Request created: $PR_URL"
+          echo "Enabling auto-merge for PR #$PR_NUMBER..."
+          gh pr merge "$PR_NUMBER" --auto --squash --delete-branch
