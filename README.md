@@ -36,11 +36,16 @@ docker run -it --name futu-opend-docker \
 -e FUTU_ACCOUNT_ID=<your_account_id> \
 -e FUTU_ACCOUNT_PWD=<your_password> \
 -v $(pwd)/futu.pem:/.futu/futu.pem \
+-v futu-opend-data:/home/futu/.com.futunn.FutuOpenD \
 -p 11111:11111 \
 -p 22222:22222 \
 ghcr.io/manhinhang/futu-opend-docker
 ```
 
+> The `futu-opend-data` named volume keeps FutuOpenD's login session across
+> container recreates so SMS verification isn't required on every restart.
+> See [Login session persistence](#login-session-persistence) for details.
+>
 > **Port mappings**:
 >
 > - `11111`: API port for FutuOpenD protocol
@@ -166,6 +171,54 @@ Edit `.env` (auto-loaded by `docker compose`):
 docker compose up -d
 ```
 
+### Login session persistence
+
+Mounting the `futu-opend-data` named volume at
+`/home/futu/.com.futunn.FutuOpenD` lets FutuOpenD's runtime state —
+device-whitelist token, login cache, captcha PNG, and other session
+metadata — survive container recreate. The compose stack attaches it
+automatically; bare `docker run` users add
+`-v futu-opend-data:/home/futu/.com.futunn.FutuOpenD`. With the volume in
+place, SMS verification is **only required when the volume is empty**
+(first ever run, account switch, or explicit wipe).
+
+**Caveat — Futu-side whitelist lifetime**: Futu's server-side device
+whitelist has a short shelf life (hours to days). When Futu invalidates
+the whitelist, the next login will prompt for SMS again regardless of
+what's in the volume. The volume eliminates _Docker-recreate-induced_
+fresh-device churn; it does not extend Futu's own whitelist policy.
+
+**Image version requirement**: this volume needs an image built from a
+Dockerfile that pre-creates `/home/futu/.com.futunn.FutuOpenD` with
+`futu` ownership (introduced alongside this volume). Older published
+images leave the mount point owned by `root`, and FutuOpenD (running as
+`futu`) will EACCES on first write. Run `docker compose pull` (or
+`docker compose build`) when adopting this change.
+
+**Wipe the volume** to force a fresh login. The volume's actual name
+depends on how you launched the stack (compose namespaces it by project
+directory; `docker run` does not):
+
+```bash
+# Compose users — wipes everything in one step:
+docker compose down -v
+
+# Compose users — manual, while the stack is down:
+docker volume rm futu-opend-docker_futu-opend-data
+
+# Bare `docker run` users:
+docker rm -f futu-opend-docker
+docker volume rm futu-opend-data
+```
+
+Run `docker volume ls` if you're not sure which volume name applies.
+
+Wipe when:
+
+- Switching to a different `FUTU_ACCOUNT_ID`.
+- After upgrading FutuOpenD across major versions.
+- Diagnosing login loops that don't respond to credential rotation.
+
 ### Healthcheck
 
 The container includes a healthcheck that monitors the FutuOpenD process:
@@ -243,6 +296,7 @@ If the container fails to start:
 1. **RSA key**: Ensure `futu.pem` exists and is properly mounted at `/.futu/futu.pem`
 2. **Environment variables**: Verify `FUTU_ACCOUNT_ID` and either `FUTU_ACCOUNT_PWD` or `FUTU_ACCOUNT_PWD_MD5` are set
 3. **Verification required**: First run may require verification codes
+4. **Stale session state**: if you've changed accounts or upgraded OpenD across major versions, wipe the data volume — see [Login session persistence](#login-session-persistence).
 
 ### Verification codes
 
