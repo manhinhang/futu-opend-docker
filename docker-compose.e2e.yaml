@@ -7,11 +7,12 @@
 #   FUTU_ACCOUNT_ID / FUTU_ACCOUNT_PWD env vars). The base compose uses .env,
 #   which has empty values.
 # - Runs with `network_mode: host` so OpenD's outbound to Futu's servers
-#   doesn't go through docker's bridge (the bridge has connectivity issues
-#   on some local setups and silently produces ">>>登录失败,网络异常" even
-#   when the account is healthy). Side effect: container ports are bound
-#   directly on the host (no port mapping needed), so FUTU_OPEND_IP must be
-#   0.0.0.0 — the container sees the host's hostname which won't resolve.
+#   doesn't go through docker's bridge — verified twice on this setup that
+#   the bridge silently produces ">>>登录失败,网络异常" within ~45s of login,
+#   even on a healthy account well past Futu's rate-limit cool-down. Host
+#   net consistently works. Side effect: container ports are bound directly
+#   on the host (no port mapping needed), so FUTU_OPEND_IP must be 0.0.0.0
+#   — the container sees the host's hostname which won't resolve.
 # - The WebSocket listener is enabled by start.sh inside the container when
 #   FUTU_OPEND_WEBSOCKET_PORT is set in .env.e2e (port 33333 binds directly
 #   on the host under network_mode: host).
