@@ -55,8 +55,12 @@ ENV FUTU_OPEND_PORT=11111
 ENV FUTU_OPEND_TELNET_PORT=22222
 
 # Create non-root user and necessary directories
+# /home/futu/.com.futunn.FutuOpenD is FutuOpenD's runtime state dir; pre-creating it
+# (owned by futu) lets a named volume mounted there inherit the right ownership on
+# first attach. Without this, Docker creates the mount point as root and OpenD EACCES.
 RUN groupadd -r futu && useradd -r -g futu -m -d /home/futu futu && \
-    mkdir -p /.futu /bin && chown -R futu:futu /.futu /bin /home/futu
+    mkdir -p /.futu /bin /home/futu/.com.futunn.FutuOpenD && \
+    chown -R futu:futu /.futu /bin /home/futu
 
 COPY script/start.sh /bin/start.sh
 RUN chmod +x /bin/start.sh && chown futu:futu /bin/start.sh
@@ -86,8 +90,12 @@ ENV FUTU_OPEND_PORT=11111
 ENV FUTU_OPEND_TELNET_PORT=22222
 
 # Create non-root user and necessary directories
+# /home/futu/.com.futunn.FutuOpenD is FutuOpenD's runtime state dir; pre-creating it
+# (owned by futu) lets a named volume mounted there inherit the right ownership on
+# first attach. Without this, Docker creates the mount point as root and OpenD EACCES.
 RUN groupadd -r futu && useradd -r -g futu -m -d /home/futu futu && \
-    mkdir -p /.futu /bin && chown -R futu:futu /.futu /bin /home/futu
+    mkdir -p /.futu /bin /home/futu/.com.futunn.FutuOpenD && \
+    chown -R futu:futu /.futu /bin /home/futu
 
 COPY script/start.sh /bin/start.sh
 RUN chmod +x /bin/start.sh && chown futu:futu /bin/start.sh
