@@ -154,14 +154,28 @@ function preflight () {
   }
 }
 
+// Minimal `.env`-style parser: ignores blank lines and `# …` comments,
+// strips a single layer of matching surrounding quotes (so users who write
+// FOO="bar" — the safer shape for compose env-files — don't end up with
+// quote characters inside their password).
+function parseEnvFile (text) {
+  const map = {}
+  for (const raw of text.split('\n')) {
+    const line = raw.trim()
+    if (!line || line.startsWith('#')) continue
+    const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/)
+    if (!m) continue
+    let value = m[2]
+    const quoted = value.match(/^(['"])(.*)\1$/)
+    if (quoted) value = quoted[2]
+    map[m[1]] = value
+  }
+  return map
+}
+
 function readCredentials () {
   if (existsSync(ENV_FILE)) {
-    const lines = readFileSync(ENV_FILE, 'utf8').split('\n')
-    const map = {}
-    for (const line of lines) {
-      const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/)
-      if (m) map[m[1]] = m[2]
-    }
+    const map = parseEnvFile(readFileSync(ENV_FILE, 'utf8'))
     if (map.FUTU_ACCOUNT_ID && map.FUTU_ACCOUNT_PWD) {
       output.write(`[k8s-e2e] credentials sourced from ${ENV_FILE}\n`)
       return { accountId: map.FUTU_ACCOUNT_ID, accountPwd: map.FUTU_ACCOUNT_PWD }
@@ -344,11 +358,17 @@ async function waitForKindReady (timeoutMs) {
 // Tail the existing-backend pod's logs and update mutable observation flags.
 // Returns { state, stop } — `state` is the live observation object the poll
 // loop reads each tick; `stop()` ends the tail.
+//
+// `state.smsError` is set if the prompt/send fails. The poll loop in
+// `waitForExistingReady` reads it and throws — without this, a failed SMS
+// path would log and reset `twoFaPending`, then re-fire the moment the next
+// 2FA log line arrived, looping against Futu's rate limit.
 function installExistingTail () {
   const state = {
     twoFaSent: false,
     twoFaPending: false,
     smsHandlerP: null,
+    smsError: null,
     readyMarkerSeen: false,
     loginFailLine: null
   }
@@ -360,11 +380,16 @@ function installExistingTail () {
     onLine: (line) => {
       if (READY_MARKER_RE.test(line)) state.readyMarkerSeen = true
       if (LOGIN_FAIL_RE.test(line)) state.loginFailLine = line
-      if (!state.twoFaPending && !state.twoFaSent && TWO_FA_RE.test(line)) {
+      // Don't re-arm after an SMS failure: surfacing one error is more
+      // useful than retrying into a rate-limit cliff.
+      if (!state.twoFaPending && !state.twoFaSent && !state.smsError && TWO_FA_RE.test(line)) {
         state.twoFaPending = true
         state.smsHandlerP = promptAndSendSmsCode()
           .then(() => { state.twoFaSent = true })
-          .catch((err) => { output.write(`[k8s-e2e] SMS handler failed: ${err.message}\n`) })
+          .catch((err) => {
+            state.smsError = err
+            output.write(`[k8s-e2e] SMS handler failed: ${err.message}\n`)
+          })
           .finally(() => { state.twoFaPending = false; state.smsHandlerP = null })
       }
     },
@@ -394,6 +419,9 @@ async function waitForExistingReady (timeoutMs) {
         throw new Error(
           `OpenD login failed: ${state.loginFailLine.trim()}\n--- last logs ---\n${logs.slice(-1500)}`
         )
+      }
+      if (state.smsError) {
+        throw new Error(`SMS 2FA handling failed: ${state.smsError.message}`)
       }
 
       const apiUp = await tcpProbe(API_PORT)
