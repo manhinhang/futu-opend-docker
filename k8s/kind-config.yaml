@@ -1,0 +1,10 @@
+# Single-node kind cluster used to validate the manifests in this directory.
+# `hostNetwork: true` in the Deployment binds to the kind node's network
+# namespace (itself a docker container) — that's enough to verify scheduling,
+# secret/PVC wiring, and probes, but not enough to reach Futu's auth servers.
+# Functional Futu login from kind is out of scope; see ../docker-compose.yaml
+# for that path.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane

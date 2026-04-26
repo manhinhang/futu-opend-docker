@@ -21,14 +21,24 @@ Docker containerization for Futu OpenD — a trading API gateway for Futu Securi
 ├── .env / .env.e2e         # Compose env (.env.e2e is e2e-generated, mode 0600)
 ├── docs/
 │   └── E2E.md              # End-to-end test harness deep-dive
+├── k8s/                    # Reference k8s deployment + harness backend (kind/existing)
+│   ├── README.md           # Deploy + first-run SMS/CAPTCHA via kubectl, plus local-dev kind flow
+│   ├── deployment.yaml     # Single-replica, hostNetwork, init-chown, 0644 RSA, pgrep liveness
+│   ├── pvc.yaml            # 1Gi RWO PVC for /home/futu/.com.futunn.FutuOpenD
+│   ├── namespace.yaml      # futu-opend namespace
+│   ├── secret.example.yaml # Reference Secret template (NOT applied via kustomize)
+│   ├── kustomization.yaml  # namespace + pvc + deployment
+│   └── kind-config.yaml    # Local-dev kind cluster (used by npm run test:k8s)
 ├── script/
 │   ├── start.sh            # Entrypoint — replaces XML placeholders, MD5s password
 │   ├── download_futu_opend.sh  # Downloads FutuOpenD tarball (3 attempts total, fixed 2 s delay between retries)
 │   ├── check_version.js    # Version scraper with retry, timeout, validation
 │   ├── check_version.test.js   # Unit tests (node:test, CJS)
 │   ├── e2e.test.mjs        # E2E suite (node:test, ESM, 6 assertions, live OpenD)
+│   ├── e2e.k8s.test.mjs    # K8s manifest-equivalence harness (ESM, kind|existing backend)
 │   └── lib/
 │       ├── docker.mjs      # compose / inspect / telnet helpers (ESM)
+│       ├── k8s.mjs         # kind / kubectl / port-forward helpers (ESM)
 │       └── _pending/       # Parked: futu-api SDK round-trip experiment (not active)
 └── .github/workflows/      # CI: publish, lint, version-check, auto-merge
 ```
@@ -44,7 +54,10 @@ Docker containerization for Futu OpenD — a trading API gateway for Futu Securi
 | Version detection      | `script/check_version.js`                      | Scraper with retry, timeout, validation                                                      |
 | Run unit tests         | `script/check_version.test.js`                 | `npm run test:unit`                                                                          |
 | Run e2e suite          | `script/e2e.test.mjs`                          | `npm run test:e2e`; needs creds + `futu.pem` (see docs/E2E.md)                               |
+| Run k8s e2e            | `script/e2e.k8s.test.mjs`                      | `npm run test:k8s` (kind = manifest-only) or `K8S_E2E_BACKEND=existing npm run test:k8s`     |
+| Deploy on k8s          | `k8s/`                                         | `kubectl apply -k k8s/`; SMS/CAPTCHA flow at [k8s/README.md](k8s/README.md)                  |
 | Compose helpers (Node) | `script/lib/docker.mjs`                        | `composeUp`, `sendTelnetCommand`, `tailLogs`, `inspectHealth`                                |
+| K8s helpers (Node)     | `script/lib/k8s.mjs`                           | `createKindCluster`, `kindLoadImage`, `tailKubectlLogs`, `startPortForward`                  |
 | Enable WebSocket       | `script/start.sh` (websocket section)          | Set `FUTU_OPEND_WEBSOCKET_PORT` (default disabled)                                           |
 | Persist login session  | `docker-compose.yaml` `futu-opend-data`        | Mounted at `/home/futu/.com.futunn.FutuOpenD`                                                |
 | Tweak compose env      | `.env` (auto-loaded) / `.env.e2e` (e2e)        | `FUTU_OPEND_VER` mirrors `opend_version.json` stable                                         |
@@ -78,7 +91,7 @@ Docker containerization for Futu OpenD — a trading API gateway for Futu Securi
 - **XML templating**: `sed -i` replaces placeholder patterns in `FutuOpenD.xml` at container start.
 - **Dual base images**: Ubuntu 18.04 (bionic, runtime) / CentOS 7 (runtime); build stages on Ubuntu 22.04 / CentOS 7 — bionic apt is bypassed for build reliability.
 - **Healthcheck split**: The Dockerfile-shipped healthcheck is `pgrep FutuOpenD` (works). The compose override is a TCP probe on `127.0.0.1:11111`, which is misconfigured (loopback vs. hostname bind) and stays in `starting` — see [CLAUDE.md](CLAUDE.md) gotchas.
-- **2FA flow**: SMS code delivery — telnet to port `22222` (preferred), `docker attach` interactive (`input_phone_verify_code -code=XXXXXX`), or e2e file-drop at `/tmp/futu-sms-code` for non-TTY runs.
+- **2FA flow**: SMS code delivery — telnet to port `22222` (preferred), `docker attach` interactive (`input_phone_verify_code -code=XXXXXX`), or e2e file-drop at `/tmp/futu-sms-code` for non-TTY runs. K8s equivalents — `kubectl port-forward` + telnet, or `kubectl exec ... -- bash -c 'printf "...\r\n" > /dev/tcp/127.0.0.1/22222'`. See [k8s/README.md](k8s/README.md) "First-run login".
 - **Login session persistence**: Named volume `futu-opend-data` at `/home/futu/.com.futunn.FutuOpenD`; the Dockerfile pre-creates the path with `futu:futu` ownership for first-mount inheritance.
 
 ## COMMANDS
