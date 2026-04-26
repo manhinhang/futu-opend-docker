@@ -15,8 +15,6 @@ jobs:
       should-build: ${{ steps.filter.outputs.code }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -37,8 +35,6 @@ jobs:
       stable_version: ${{ steps.stable_version.outputs.result }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
       - uses: actions/github-script@v7
         id: beta_version
         with:
@@ -79,8 +75,6 @@ jobs:
       STABLE_VERSION: ${{ needs.extract-version.outputs.stable_version }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
 
       - name: Docker login
         uses: docker/login-action@v3
