@@ -7,6 +7,17 @@ import { promisify } from 'node:util'
 
 const execFileP = promisify(execFile)
 
+// Most read wrappers below catch errors and return a sentinel ("missing", null,
+// []) so the caller can keep polling without writing try/catch at every site.
+// That's fine for the happy path but hides the underlying cause when the
+// harness times out (e.g. a stale kubeconfig produces "phase=missing,
+// statuses=[]" indistinguishable from a genuinely missing pod). Gate a debug
+// channel on E2E_DEBUG so failed runs can be re-run with the real reason
+// surfaced on stderr.
+const debugLog = process.env.E2E_DEBUG
+  ? (msg) => process.stderr.write(`[k8s-lib:debug] ${msg}\n`)
+  : () => {}
+
 export function kindAvailable (kindBin = 'kind') {
   try {
     execFileSync(kindBin, ['version'], { stdio: 'ignore' })
@@ -139,7 +150,8 @@ export async function kubectlGetPodName ({ selector, namespace, context }) {
       '-o', 'jsonpath={.items[0].metadata.name}'
     ])
     return stdout.trim() || null
-  } catch {
+  } catch (err) {
+    debugLog(`kubectlGetPodName(${selector}) failed: ${err.message}`)
     return null
   }
 }
@@ -153,7 +165,8 @@ export async function kubectlGetPodPhase ({ selector, namespace, context }) {
       '-o', 'jsonpath={.items[0].status.phase}'
     ])
     return stdout.trim() || 'missing'
-  } catch {
+  } catch (err) {
+    debugLog(`kubectlGetPodPhase(${selector}) failed: ${err.message}`)
     return 'missing'
   }
 }
@@ -170,7 +183,8 @@ export async function kubectlGetContainerStatuses ({ selector, namespace, contex
     ])
     if (!stdout.trim()) return []
     return JSON.parse(stdout)
-  } catch {
+  } catch (err) {
+    debugLog(`kubectlGetContainerStatuses(${selector}) failed: ${err.message}`)
     return []
   }
 }
@@ -178,12 +192,22 @@ export async function kubectlGetContainerStatuses ({ selector, namespace, contex
 // Snapshot the init container's terminated exit code (or null if the
 // container is still running / status missing). Single jsonpath read against
 // the pod, no JSON parse needed on this side.
+//
+// `initContainer` is interpolated into a jsonpath string filter. We restrict
+// it to the kubernetes DNS-1123 label charset (the only legal shape for a
+// container name anyway) so a stray quote can't corrupt the jsonpath.
 export async function kubectlGetInitContainerExitCode ({
   selector,
   initContainer,
   namespace,
   context
 }) {
+  if (!/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/.test(initContainer)) {
+    throw new Error(
+      `invalid init container name: ${JSON.stringify(initContainer)} ` +
+      '(must match DNS-1123 label rules)'
+    )
+  }
   try {
     const { stdout } = await execFileP('kubectl', [
       ...kubectlContextArgs(context),
@@ -193,7 +217,8 @@ export async function kubectlGetInitContainerExitCode ({
     ])
     const code = stdout.trim()
     return code === '' ? null : Number.parseInt(code, 10)
-  } catch {
+  } catch (err) {
+    debugLog(`kubectlGetInitContainerExitCode(${initContainer}) failed: ${err.message}`)
     return null
   }
 }
@@ -239,12 +264,18 @@ export async function kubectlLogs ({
     const { stdout, stderr } = await execFileP('kubectl', args, { maxBuffer: 16 * 1024 * 1024 })
     return stdout + stderr
   } catch (err) {
+    debugLog(`kubectlLogs failed: ${err.message}`)
     return (err.stdout ?? '') + (err.stderr ?? '')
   }
 }
 
 // Streams kubectl logs into onLine, similar to docker.mjs::tailLogs.
 // CR-stripped per line for the same OpenD `\r` cursor-rewrite quirk.
+//
+// Cap the inter-line buffer at MAX_LINE_BYTES — if a stalled stream or a
+// pathologically long line never produces a `\n`, we'd otherwise keep
+// concatenating chunks until the process OOMs.
+const MAX_LINE_BYTES = 1 * 1024 * 1024
 export function tailKubectlLogs ({
   selector,
   namespace,
@@ -270,6 +301,12 @@ export function tailKubectlLogs ({
           try { onError(err, line) } catch { /* swallow */ }
         }
       }
+    }
+    // Cap unbounded growth on stalled streams (no newline ever arrives).
+    // Keep the trailing window so a delayed newline still emits something
+    // useful, just truncated.
+    if (buf.length > MAX_LINE_BYTES) {
+      buf = buf.slice(-MAX_LINE_BYTES)
     }
   }
 
@@ -309,12 +346,28 @@ export function tailKubectlLogs ({
 }
 
 // Spawn kubectl port-forward and return { stop, ready } where `ready`
-// resolves once kubectl reports "Forwarding from ...". With hostNetwork
-// pods, port-forward still works because it goes through the kube API
-// server, not the pod's network namespace.
+// resolves once kubectl reports a "Forwarding from 127.0.0.1:<port> -> ..."
+// line for every requested host port. With hostNetwork pods, port-forward
+// still works because it goes through the kube API server, not the pod's
+// network namespace.
 //
 // `target` is a kubectl resource reference like `deployment/futu-opend` or a
 // pod name — `-l <selector>` is NOT a supported flag for port-forward.
+//
+// Verifies the bound host port matches the requested one. kubectl falls back
+// to a random free port when the requested port is already in use on the
+// host (e.g. a real OpenD running outside the cluster); without this check
+// downstream `tcpProbe(API_PORT)` would silently connect to nothing.
+const FORWARDING_LINE_RE = /Forwarding from \S+?:(\d+) ->/g
+
+function parseRequestedHostPort (spec) {
+  // spec shapes: number (1234), "1234" (same on both sides), "host:remote"
+  if (typeof spec === 'number') return spec
+  const str = String(spec)
+  const colon = str.indexOf(':')
+  return Number.parseInt(colon >= 0 ? str.slice(0, colon) : str, 10)
+}
+
 export function startPortForward ({
   target,
   namespace,
@@ -322,6 +375,7 @@ export function startPortForward ({
   context,
   readyTimeoutMs = 15_000
 }) {
+  const requestedHostPorts = ports.map(parseRequestedHostPort)
   const args = [
     ...kubectlContextArgs(context),
     '-n', namespace,
@@ -341,7 +395,29 @@ export function startPortForward ({
     }, readyTimeoutMs)
     child.stdout.on('data', (chunk) => {
       stdoutBuf += chunk.toString()
-      if (/Forwarding from /.test(stdoutBuf)) {
+      // kubectl emits "Forwarding from 127.0.0.1:N -> ..." and a matching
+      // "[::1]:N -> ..." line per port, possibly across multiple chunks.
+      // Dedupe via Set and fail eagerly on the first surprise port number.
+      const boundPorts = new Set()
+      FORWARDING_LINE_RE.lastIndex = 0
+      let m
+      while ((m = FORWARDING_LINE_RE.exec(stdoutBuf)) !== null) {
+        boundPorts.add(Number.parseInt(m[1], 10))
+      }
+      const unexpected = [...boundPorts].filter((p) => !requestedHostPorts.includes(p))
+      if (unexpected.length > 0) {
+        clearTimeout(timer)
+        reject(new Error(
+          `port-forward bound to host port(s) we didn't request: ` +
+          `unexpected=[${unexpected.join(', ')}], ` +
+          `requested=[${requestedHostPorts.join(', ')}]. ` +
+          `kubectl falls back to a random free port when the requested host ` +
+          `port is already in use — likely something else is bound on the ` +
+          `local machine.`
+        ))
+        return
+      }
+      if (requestedHostPorts.every((p) => boundPorts.has(p))) {
         clearTimeout(timer)
         resolve()
       }
@@ -390,6 +466,7 @@ export async function kubectlDescribePod ({ selector, namespace, context }) {
     ], { maxBuffer: 16 * 1024 * 1024 })
     return stdout
   } catch (err) {
+    debugLog(`kubectlDescribePod failed: ${err.message}`)
     return (err.stdout ?? '') + (err.stderr ?? '')
   }
 }
