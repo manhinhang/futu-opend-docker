@@ -36,12 +36,16 @@ jobs:
         run: |
           node script/check_version.js
 
+      - name: Sync version references
+        run: |
+          node script/update_docs_version.js
+
       - name: Create Pull Request with Auto-Merge
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ -f opend_version.json ] && [ -s opend_version.json ]; then
-            if git diff --quiet opend_version.json; then
+            if git diff --quiet -- opend_version.json README.md CLAUDE.md AGENTS.md docs/E2E.md .env; then
               echo "No version update needed"
             else
               git config --global user.name "github-actions[bot]"
@@ -55,7 +59,7 @@ jobs:
               fi
 
               git checkout -b update-futu-opend-version
-              git add opend_version.json
+              git add opend_version.json README.md CLAUDE.md AGENTS.md docs/E2E.md .env
               git commit -m "Update Futu OpenD version"
 
               git push origin update-futu-opend-version
