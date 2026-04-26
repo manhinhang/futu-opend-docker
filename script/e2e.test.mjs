@@ -235,22 +235,26 @@ async function waitForReady (timeoutMs) {
   let readyMarkerSeen = false
   let loginFailLine = null
 
-  const stopTail = tailLogs(CONTAINER_NAME, (line) => {
-    if (READY_MARKER_RE.test(line)) readyMarkerSeen = true
-    if (LOGIN_FAIL_RE.test(line)) loginFailLine = line
-    if (!twoFaPending && !twoFaSent && TWO_FA_RE.test(line)) {
-      twoFaPending = true
-      smsHandlerP = promptAndSendSmsCode()
-        .then(() => { twoFaSent = true })
-        .catch((err) => {
-          output.write(`[e2e] SMS handler failed: ${err.message}\n`)
-        })
-        .finally(() => {
-          twoFaPending = false
-          smsHandlerP = null
-        })
-    }
-  })
+  const stopTail = tailLogs(
+    CONTAINER_NAME,
+    (line) => {
+      if (READY_MARKER_RE.test(line)) readyMarkerSeen = true
+      if (LOGIN_FAIL_RE.test(line)) loginFailLine = line
+      if (!twoFaPending && !twoFaSent && TWO_FA_RE.test(line)) {
+        twoFaPending = true
+        smsHandlerP = promptAndSendSmsCode()
+          .then(() => { twoFaSent = true })
+          .catch((err) => {
+            output.write(`[e2e] SMS handler failed: ${err.message}\n`)
+          })
+          .finally(() => {
+            twoFaPending = false
+            smsHandlerP = null
+          })
+      }
+    },
+    (err, line) => debugLog(`tailLogs listener threw on "${line.slice(0, 60)}…": ${err.message}`)
+  )
 
   try {
     while (Date.now() < deadline) {
@@ -332,7 +336,6 @@ function wsHandshake (host, port, { timeoutMs = TIMEOUTS.wsHandshake } = {}) {
 }
 
 const ctx = {
-  startedContainer: false,
   finalHealth: 'unknown',
   twoFaSent: false,
   envFileWasPreExisting: false
@@ -364,7 +367,6 @@ async function setupContainer () {
     envFile: ENV_FILE,
     projectDir: PROJECT_DIR
   })
-  ctx.startedContainer = true
 
   output.write('[e2e] waiting for OpenD to become ready…\n')
   const ready = await waitForReady(TIMEOUTS.ready)
