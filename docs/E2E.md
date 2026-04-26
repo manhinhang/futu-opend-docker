@@ -48,7 +48,7 @@ e2e.test.mjs (before)
     │                             • FUTU_OPEND_VER (sourced from opend_version.json's
     │                               stableVersion; consumed by compose build.args)
     ├── composeUp() ──────────── docker compose --build                          (script/lib/docker.mjs)
-    │                             -f docker-compose.yaml -f docker-compose.e2e.yaml
+    │                             -f docker-compose.yaml --env-file .env.e2e
     └── waitForReady()           tail logs → gate on >>>WebSocket监听地址 / fail-fast on >>>登录失败
                                  along the way: detect 2FA prompt → file-drop or TTY prompt
                                                 → sendTelnetCommand() to port 22222 with CRLF
@@ -58,11 +58,7 @@ it() × 6
 after → fullCleanup() → composeDown -v [+ rm .env.e2e if generated]
 ```
 
-The override file `docker-compose.e2e.yaml` does three things on top of the base `docker-compose.yaml`:
-
-1. Inherits `build:` (with `FUTU_OPEND_VER` from `opend_version.json` via `.env.e2e`) so the test exercises this branch's `start.sh` and `Dockerfile`. `composeUp` passes `--build` so the image is always fresh.
-2. Resets `env_file:` to `.env.e2e` so the base `.env` (with empty creds) doesn't leak in.
-3. Adds the WebSocket port mapping (`33333:33333`). The listener itself is enabled inside the container by `start.sh` reading `FUTU_OPEND_WEBSOCKET_PORT` from `.env.e2e`.
+A single compose file (`docker-compose.yaml`) is used. Container env values come from compose-time interpolation (`${VAR:-default}` in the `environment:` block); `.env` is auto-loaded for the bare `docker compose up` case, and the e2e test passes `--env-file .env.e2e` to inject real creds + WebSocket settings. The compose file uses `network_mode: host` (and `build.network: host`) by default — verified necessary for OpenD's outbound to Futu on this setup; bridge networking silently produces `>>>登录失败,网络异常`.
 
 ## Prerequisites (one-time)
 
@@ -152,7 +148,7 @@ The 5-minute file-drop timeout is enough for a normal SMS round-trip; the overal
 | `script/start.sh`                    | Runs inside the container. Sed-substitutes the XML config; if `FUTU_OPEND_WEBSOCKET_PORT` is set, also uncomments `<websocket_port>` / `<websocket_ip>` to enable the WS listener.    |
 | `script/lib/docker.mjs`              | `composeUp`/`composeDown`, `inspectHealth`/`inspectExitCode`, `getLogs`, `pgrepFutuOpend`, `tailLogs(container, onLine)`, and `sendTelnetCommand(line)`.                              |
 | `script/lib/_pending/futu-probe.mjs` | **Not active.** Stub for the future SDK round-trip experiment — references the `futu-api` npm package, which is intentionally not in `package.json`. See [Future work](#future-work). |
-| `docker-compose.e2e.yaml`            | Compose override: prebuilt image, env_file reset, WS port mapping.                                                                                                                    |
+| `docker-compose.yaml`                | Single compose file. `network_mode: host` + `build.network: host` baked in; container env via `${VAR}` interpolation from `--env-file`.                                               |
 | `package.json` (`test:e2e` script)   | `node --test --test-timeout=600000 script/e2e.test.mjs`                                                                                                                               |
 
 ### Module format

@@ -41,8 +41,7 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const PROJECT_DIR = resolve(HERE, '..')
 const ENV_FILE = resolve(PROJECT_DIR, '.env.e2e')
 const PEM_FILE = resolve(PROJECT_DIR, 'futu.pem')
-const COMPOSE_BASE = resolve(PROJECT_DIR, 'docker-compose.yaml')
-const COMPOSE_E2E = resolve(PROJECT_DIR, 'docker-compose.e2e.yaml')
+const COMPOSE_FILE = resolve(PROJECT_DIR, 'docker-compose.yaml')
 const OPEND_VERSION_FILE = resolve(PROJECT_DIR, 'opend_version.json')
 
 const WS_PORT = 33333
@@ -67,8 +66,6 @@ const TIMEOUTS = {
 // Match conservatively — a false positive here would block the test.
 const TWO_FA_RE = /(input_phone_verify_code|verify code|短信验证码|手机验证码)/i
 
-const COMPOSE_FILES = [COMPOSE_BASE, COMPOSE_E2E]
-
 // Set E2E_DEBUG=1 to log best-effort cleanup failures that are normally swallowed.
 const debugLog = process.env.E2E_DEBUG
   ? (msg) => output.write(`[e2e:debug] ${msg}\n`)
@@ -84,9 +81,9 @@ function preflight ({ skipEnvCredCheck = false } = {}) {
       '  openssl genrsa -out futu.pem 1024'
     )
   }
-  if (!existsSync(COMPOSE_E2E)) {
+  if (!existsSync(COMPOSE_FILE)) {
     throw new Error(
-      `Missing ${COMPOSE_E2E}. Re-run from a clean checkout — this file is committed.`
+      `Missing ${COMPOSE_FILE}. Re-run from a clean checkout — this file is committed.`
     )
   }
   if (!existsSync(OPEND_VERSION_FILE)) {
@@ -363,7 +360,7 @@ function prepareInputs () {
 async function setupContainer () {
   output.write('[e2e] docker compose up -d --build…\n')
   await composeUp({
-    composeFiles: COMPOSE_FILES,
+    composeFile: COMPOSE_FILE,
     envFile: ENV_FILE,
     projectDir: PROJECT_DIR
   })
@@ -379,7 +376,7 @@ async function setupContainer () {
 async function fullCleanup () {
   try {
     await composeDown({
-      composeFiles: COMPOSE_FILES,
+      composeFile: COMPOSE_FILE,
       envFile: ENV_FILE,
       projectDir: PROJECT_DIR
     })
