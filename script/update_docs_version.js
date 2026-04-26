@@ -12,6 +12,8 @@ const path = require('path')
 const ROOT = path.join(__dirname, '..')
 const VERSION_FILE = path.join(ROOT, 'opend_version.json')
 
+// Word-split by check-ver-update.yml into `git diff` / `git add` args —
+// keep entries whitespace- and shell-metacharacter-free.
 const TARGET_FILES = [
   'README.md',
   'CLAUDE.md',
