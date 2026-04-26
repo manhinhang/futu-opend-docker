@@ -49,7 +49,7 @@ Docker containerization for Futu OpenD — a trading API gateway for Futu Securi
 | Persist login session  | `docker-compose.yaml` `futu-opend-data`        | Mounted at `/home/futu/.com.futunn.FutuOpenD`                                                |
 | Tweak compose env      | `.env` (auto-loaded) / `.env.e2e` (e2e)        | `FUTU_OPEND_VER` mirrors `opend_version.json` stable                                         |
 | Add npm script         | `package.json`                                 | Currently `test:unit`, `test:e2e`                                                            |
-| Download manually      | `bash script/download_futu_opend.sh <tarball>` | Single positional arg, e.g. `Futu_OpenD_10.2.6208_Ubuntu18.04.tar.gz`; retries 3× internally |
+| Download manually      | `bash script/download_futu_opend.sh <tarball>` | Single positional arg, e.g. `Futu_OpenD_10.4.6408_Ubuntu18.04.tar.gz`; retries 3× internally |
 
 ## CONVENTIONS
 
@@ -88,11 +88,11 @@ Docker containerization for Futu OpenD — a trading API gateway for Futu Securi
 ## VERSIONS & PORTS
 
 | Fact                        | Value                                  | Source of truth                                |
-| --------------------------- | -------------------------------------- | ---------------------------------------------- |
-| Stable OpenD                | 10.4.6408                              | `opend_version.json`                           |
+| --------------------------- | -------------------------------------- | ---------------------------------------------- | --------------------------- |
+| Stable OpenD                | 10.4.6408                              | `opend_version.json`                           | <!-- futu-opend-version --> |
 | Beta OpenD                  | null                                   | `opend_version.json`                           |
 | Build-arg default           | 9.3.5308                               | `Dockerfile` (legacy default; CI passes value) |
-| `.env` default              | 10.2.6208                              | `.env` (mirrors stable on bumps)               |
+| `.env` default              | 10.4.6408                              | `.env` (mirrors stable on bumps)               | <!-- futu-opend-version --> |
 | Runtime base (Ubuntu)       | `ubuntu:18.04` (bionic, binary compat) | `Dockerfile`                                   |
 | Build base (Ubuntu)         | `ubuntu:22.04` (jammy, apt works)      | `Dockerfile`                                   |
 | Runtime/build base (CentOS) | `centos:centos7`                       | `Dockerfile`                                   |
