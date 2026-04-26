@@ -122,7 +122,7 @@ FUTU_ACCOUNT_PWD=<your-password>
 LOCAL_RSA_FILE_PATH=/absolute/path/to/futu.pem
 FUTU_OPEND_WEBSOCKET_PORT=33333
 FUTU_OPEND_WEBSOCKET_IP=0.0.0.0
-FUTU_OPEND_VER=10.2.6208   # mirror opend_version.json's stableVersion
+FUTU_OPEND_VER=10.4.6408   # mirror opend_version.json's stableVersion
 ```
 
 Write it with mode `0600`. The test will leave a pre-populated `.env.e2e` alone on cleanup; only files it generated itself get unlinked.

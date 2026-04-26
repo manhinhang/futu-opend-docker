@@ -11,12 +11,12 @@ Docker container for **FutuOpenD** — Futu Securities' trading API gateway. Mul
 ```bash
 # Build locally (Ubuntu runtime — default)
 docker build -t futu-opend-docker \
-  --build-arg FUTU_OPEND_VER=10.2.6208 \
+  --build-arg FUTU_OPEND_VER=10.4.6408 \
   --target final-ubuntu-target .
 
 # Build locally (CentOS runtime)
 docker build -t futu-opend-docker \
-  --build-arg FUTU_OPEND_VER=10.2.6208 \
+  --build-arg FUTU_OPEND_VER=10.4.6408 \
   --target final-centos-target .
 
 # Run with compose (uses .env + ./futu.pem)
@@ -36,7 +36,7 @@ npm run test:e2e
 node script/check_version.js
 
 # Manually fetch the FutuOpenD tarball
-bash script/download_futu_opend.sh Futu_OpenD_10.2.6208_Ubuntu18.04.tar.gz
+bash script/download_futu_opend.sh Futu_OpenD_10.4.6408_Ubuntu18.04.tar.gz
 
 # Deliver SMS 2FA via telnet (preferred for automation; `docker attach` is the
 # interactive alternative — see README Method 1)
@@ -52,7 +52,7 @@ echo 123456 > /tmp/futu-sms-code
 2. **`script/start.sh`** — runtime brain. `sed`-templates `FutuOpenD.xml` (placeholders like `<api_port>`, `<rsa_private_key>`), MD5-hashes `FUTU_ACCOUNT_PWD` if `FUTU_ACCOUNT_PWD_MD5` is unset, conditionally enables WebSocket when `FUTU_OPEND_WEBSOCKET_PORT` is set, then launches `/bin/FutuOpenD -cfg_file=/tmp/FutuOpenD.xml` as a child process (no `exec` builtin — bash stays as PID 1, which means signals to the container are not forwarded to FutuOpenD).
 3. **`docker-compose.yaml`** — `network_mode: host` (mandatory; bridge silently fails) plus the named volume `futu-opend-data` for login session persistence. Healthcheck is a TCP probe on `127.0.0.1:11111` (see gotcha below).
 4. **`script/e2e.test.mjs` + `script/lib/docker.mjs`** — local-only `node:test` e2e suite. 6 assertions, telnet-based 2FA delivery, file-drop fallback for non-TTY runs. Full architecture in [docs/E2E.md](docs/E2E.md).
-5. **`.github/workflows/publish.yml`** — matrix CI (`BASE_IMG` × `FUTU_OPEND_VER`) → GHCR. A `dorny/paths-filter` step is meant to skip the build when changes are limited to `README.md`, `LICENSE`, `.github/workflows/check-ver-update.yml`, or `.github/workflows/lint.yml` — but the third entry has a typo: the actual file on disk is `check-ver-upadte.yml`, so version-check edits still trigger a publish in practice.
+5. **`.github/workflows/publish.yml`** — matrix CI (`BASE_IMG` × `FUTU_OPEND_VER`) → GHCR. A `dorny/paths-filter` step skips the build when changes are limited to `README.md`, `LICENSE`, `.github/workflows/check-ver-update.yml`, or `.github/workflows/lint.yml`.
 
 ## Critical gotchas
 
