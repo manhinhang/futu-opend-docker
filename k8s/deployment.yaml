@@ -1,0 +1,140 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: futu-opend
+  labels:
+    app: futu-opend
+spec:
+  replicas: 1
+  # Recreate, not RollingUpdate: the PVC is RWO and FutuOpenD's login session
+  # is single-writer state — two pods would deadlock on the volume during a
+  # rollout.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: futu-opend
+  template:
+    metadata:
+      labels:
+        app: futu-opend
+    spec:
+      # Mirrors `network_mode: host` from docker-compose.yaml. Bridge networking
+      # silently fails Futu auth (~45s after login) per CLAUDE.md.
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      # Fresh PVCs are owned root:root by the kubelet; the futu user can't
+      # write to them. fsGroup would need a hardcoded GID, but the Dockerfile
+      # creates futu via `useradd -r` with an auto-assigned system UID — so we
+      # chown at startup using the same image (which knows the right uid:gid).
+      initContainers:
+        - name: init-data-perms
+          image: ghcr.io/manhinhang/futu-opend-docker:ubuntu-stable
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - chown -R futu:futu /home/futu/.com.futunn.FutuOpenD
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+          volumeMounts:
+            - name: opend-data
+              mountPath: /home/futu/.com.futunn.FutuOpenD
+      containers:
+        - name: futu-opend
+          image: ghcr.io/manhinhang/futu-opend-docker:ubuntu-stable
+          imagePullPolicy: IfNotPresent
+          # Mirror docker-compose `stdin_open: true` / `tty: true` so the
+          # `docker attach`-style 2FA path stays available; telnet on 22222 is
+          # the recommended automation route either way.
+          stdin: true
+          tty: true
+          # Defense-in-depth. The image's `USER futu` directive already runs
+          # as a non-root system UID, but kubelet can't verify that via
+          # `runAsNonRoot: true` because USER is non-numeric (Dockerfile uses
+          # `useradd -r` without a pinned UID). For PSS Restricted clusters,
+          # pin `runAsUser: <UID>` here to the numeric futu UID after probing
+          # it from the image (see k8s/README.md "Caveats").
+          # `readOnlyRootFilesystem` is intentionally NOT enabled because
+          # `script/start.sh` writes to `/tmp/FutuOpenD.xml` at startup;
+          # would need an emptyDir mount at `/tmp` to flip on.
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: FUTU_ACCOUNT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: futu-credentials
+                  key: FUTU_ACCOUNT_ID
+            - name: FUTU_ACCOUNT_PWD
+              valueFrom:
+                secretKeyRef:
+                  name: futu-credentials
+                  key: FUTU_ACCOUNT_PWD
+                  optional: true
+            - name: FUTU_ACCOUNT_PWD_MD5
+              valueFrom:
+                secretKeyRef:
+                  name: futu-credentials
+                  key: FUTU_ACCOUNT_PWD_MD5
+                  optional: true
+            - name: FUTU_OPEND_RSA_FILE_PATH
+              value: /.futu/futu.pem
+            - name: FUTU_OPEND_IP
+              value: "0.0.0.0"
+            - name: FUTU_OPEND_PORT
+              value: "11111"
+            - name: FUTU_OPEND_TELNET_PORT
+              value: "22222"
+            # Uncomment to expose WebSocket (mirrors compose env `FUTU_OPEND_WEBSOCKET_PORT`).
+            # - name: FUTU_OPEND_WEBSOCKET_PORT
+            #   value: "33333"
+            # - name: FUTU_OPEND_WEBSOCKET_IP
+            #   value: "0.0.0.0"
+          volumeMounts:
+            - name: rsa-key
+              mountPath: /.futu
+              readOnly: true
+            - name: opend-data
+              mountPath: /home/futu/.com.futunn.FutuOpenD
+          # Matches Dockerfile HEALTHCHECK (pgrep FutuOpenD).
+          livenessProbe:
+            exec:
+              command: ["pgrep", "FutuOpenD"]
+            initialDelaySeconds: 180
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 11111
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+      volumes:
+        - name: rsa-key
+          secret:
+            secretName: futu-credentials
+            items:
+              - key: futu.pem
+                path: futu.pem
+            # 0644 is mandatory: the futu container UID differs from the
+            # secret-file owner (root), so 0600 silently disables RSA and
+            # Futu rejects login. See CLAUDE.md "Critical gotchas".
+            defaultMode: 0644
+        - name: opend-data
+          persistentVolumeClaim:
+            claimName: futu-opend-data

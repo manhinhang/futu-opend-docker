@@ -1,7 +1,8 @@
 {
   "scripts": {
     "test:unit": "node --test script/*.test.js",
-    "test:e2e": "node --test --test-timeout=600000 script/e2e.test.mjs"
+    "test:e2e": "node --test --test-timeout=600000 script/e2e.test.mjs",
+    "test:k8s": "node --test --test-timeout=900000 script/e2e.k8s.test.mjs"
   },
   "dependencies": {
     "jsdom": "24.1.3"

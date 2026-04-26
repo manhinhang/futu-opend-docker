@@ -5,6 +5,9 @@
 
 lightweight futu opend docker
 
+> **Running on Kubernetes?** See [`k8s/README.md`](k8s/README.md) for a
+> reference deployment plus first-run SMS/CAPTCHA delivery via `kubectl`.
+
 ## Pull the docker image from GitHub Container Registry
 
 ```bash
