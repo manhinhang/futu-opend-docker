@@ -4,6 +4,8 @@ services:
       context: .
       # Host network for apt-get reliability — the default docker bridge
       # has connectivity issues with archive.ubuntu.com on some setups.
+      # If your Docker daemon disallows host-network builds (security
+      # policy), drop this line and rely on bridge net for the build.
       network: host
       args:
         FUTU_OPEND_VER: ${FUTU_OPEND_VER}

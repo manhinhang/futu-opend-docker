@@ -1,6 +1,7 @@
 // Wrappers around `docker` and `docker compose` used by the e2e test.
 
 import { execFile, execFileSync, spawn } from 'node:child_process'
+import net from 'node:net'
 import { promisify } from 'node:util'
 
 const execFileP = promisify(execFile)
@@ -104,7 +105,10 @@ export async function waitForHealthy (container, timeoutMs, onTick) {
 // CR chars are stripped per line — OpenD uses mid-line `\r` (terminal
 // cursor-rewrite style) on some log lines, e.g. `\r>>>\rWebSocket监听地址…`,
 // which would otherwise break substring regex matches like /\>>>WebSocket监听地址/.
-export function tailLogs (container, onLine) {
+// Listener errors are caught so a bad regex in `onLine` doesn't crash the
+// whole tail process; pass an `onError` callback to surface them (e.g. via
+// a debug logger). When `onError` itself throws, the throw is swallowed.
+export function tailLogs (container, onLine, onError) {
   const child = spawn('docker', ['logs', '-f', container], { stdio: ['ignore', 'pipe', 'pipe'] })
   let buf = ''
   function consume (chunk) {
@@ -113,7 +117,13 @@ export function tailLogs (container, onLine) {
     while ((nl = buf.indexOf('\n')) !== -1) {
       const line = buf.slice(0, nl).replace(/\r/g, '')
       buf = buf.slice(nl + 1)
-      try { onLine(line) } catch { /* swallow listener errors */ }
+      try {
+        onLine(line)
+      } catch (err) {
+        if (onError) {
+          try { onError(err, line) } catch { /* swallow */ }
+        }
+      }
     }
   }
   child.stdout.on('data', consume)
@@ -127,8 +137,6 @@ export function tailLogs (container, onLine) {
 // `docker attach` to PID 1 silently drops input on this image — telnet
 // is the supported automation entrypoint per README.md ("Method 2: telnet").
 // CRLF line termination is required; bare LF gets eaten.
-import net from 'node:net'
-
 export function sendTelnetCommand (line, {
   host = '127.0.0.1',
   port = 22222,
