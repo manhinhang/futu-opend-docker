@@ -169,11 +169,11 @@ E2E_DEBUG=1 npm run test:e2e
 
 ## Known issues & gotchas
 
-### Bionic Dockerfile may fail apt-get on a fresh build
+### Bridge network can fail apt-get during build
 
-The `Dockerfile`'s `build-ubuntu` stage runs `apt-get update && apt-get install curl gnutls-bin` against `ubuntu:18.04` (bionic, EOL May 2023). `archive.ubuntu.com` may no longer serve bionic packages, so a fresh build can fail at that step. Local cached `build-ubuntu` layers usually let the e2e build succeed; the first build on a clean machine is the risk.
+Docker Compose's default bridge network has flaky connectivity to `archive.ubuntu.com` on some local setups (timeouts/silent failures during `apt-get update`). The compose file works around this by setting `build.network: host` so apt uses the host's stack. CI publish builds (GitHub Actions) work without it; this is purely for local builds.
 
-**Workaround if it fails:** pull the published image once (`docker pull ghcr.io/manhinhang/futu-opend-docker:ubuntu-stable`) and tag it with the project's expected name so compose reuses it. **Permanent fix:** bump the base image off bionic in `Dockerfile` (e.g. ubuntu:22.04 / debian:12) and verify FutuOpenD's binary still runs against the newer libc.
+If you remove `build.network: host` and apt times out, restore it. The runtime image (`final-ubuntu`) is still based on `ubuntu:18.04` for FutuOpenD-binary compatibility, but the build stage is now `ubuntu:22.04` — bionic apt issues no longer apply because nothing apt-installs in the bionic runtime stage.
 
 ### Compose healthcheck is misconfigured
 
@@ -208,6 +208,6 @@ The active suite asserts the WS upgrade returns HTTP 101 — that's enough to pr
 ## Future work
 
 - [ ] Re-activate the SDK round-trip test (`script/lib/_pending/futu-probe.mjs` → frame-format debugging or hand-rolled protobuf).
-- [ ] Bump the Dockerfile off Ubuntu 18.04 so the test can include `--build` and exercise image construction too.
+- [ ] Bump the runtime stage off Ubuntu 18.04. The build stage is already on jammy (commit `b6ac476`), but the final image stays bionic for FutuOpenD-binary compatibility. Test that the binary still runs on a newer libc base (jammy / debian:12).
 - [ ] Fix the in-container healthcheck so test 1 and 6 can assert `=healthy` instead of `≠unhealthy`.
 - [ ] Optional CI integration via 1Password service-account token (deferred from the original scope — service accounts can't read personal vaults, so this needs a shared-vault migration first).
