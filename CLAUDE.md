@@ -19,7 +19,8 @@ docker build -t futu-opend-docker \
   --build-arg FUTU_OPEND_VER=10.4.6408 \
   --target final-centos-target .
 
-# Run with compose (uses .env + ./futu.pem)
+# Run with compose (auto-loads .env — copy from .env.example first — plus ./futu.pem)
+cp .env.example .env   # one-time; .env is gitignored, fill in your creds there
 docker compose up -d
 docker compose logs -f futu-opend
 docker compose down            # preserves the futu-opend-data volume

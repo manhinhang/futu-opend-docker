@@ -154,19 +154,23 @@ read -p "Enter CAPTCHA code: " captcha_code
 
 ## Run in docker compose
 
-Edit `.env` (auto-loaded by `docker compose`):
+Copy the tracked `.env.example` template to `.env`, then edit it (auto-loaded by `docker compose`):
 
-| Environment Variable      | Description                                                                                       |
-| ------------------------- | ------------------------------------------------------------------------------------------------- |
-| FUTU_ACCOUNT_ID           | Futu account ID                                                                                   |
-| FUTU_ACCOUNT_PWD          | Futu account password (ignored if FUTU_ACCOUNT_PWD_MD5 is set)                                    |
-| FUTU_ACCOUNT_PWD_MD5      | Futu account password MD5 hash (takes priority over FUTU_ACCOUNT_PWD)                             |
-| FUTU_OPEND_IP             | OpenD bind address inside the container (default: `0.0.0.0`)                                      |
-| FUTU_OPEND_PORT           | Futu OpenD API Port in container (default: 11111)                                                 |
-| FUTU_OPEND_TELNET_PORT    | Futu OpenD Telnet Port (default: 22222)                                                           |
-| FUTU_OPEND_WEBSOCKET_PORT | Enable WebSocket listener on this port (default: disabled).                                       |
-| FUTU_OPEND_WEBSOCKET_IP   | WebSocket bind address (default: 0.0.0.0 when FUTU_OPEND_WEBSOCKET_PORT is set, else not applied) |
-| FUTU_OPEND_VER            | OpenD version to build (compose `build.args`). Defaulted in `.env`; mirrors `opend_version.json`. |
+```bash
+cp .env.example .env
+```
+
+| Environment Variable      | Description                                                                                               |
+| ------------------------- | --------------------------------------------------------------------------------------------------------- |
+| FUTU_ACCOUNT_ID           | Futu account ID                                                                                           |
+| FUTU_ACCOUNT_PWD          | Futu account password (ignored if FUTU_ACCOUNT_PWD_MD5 is set)                                            |
+| FUTU_ACCOUNT_PWD_MD5      | Futu account password MD5 hash (takes priority over FUTU_ACCOUNT_PWD)                                     |
+| FUTU_OPEND_IP             | OpenD bind address inside the container (default: `0.0.0.0`)                                              |
+| FUTU_OPEND_PORT           | Futu OpenD API Port in container (default: 11111)                                                         |
+| FUTU_OPEND_TELNET_PORT    | Futu OpenD Telnet Port (default: 22222)                                                                   |
+| FUTU_OPEND_WEBSOCKET_PORT | Enable WebSocket listener on this port (default: disabled).                                               |
+| FUTU_OPEND_WEBSOCKET_IP   | WebSocket bind address (default: 0.0.0.0 when FUTU_OPEND_WEBSOCKET_PORT is set, else not applied)         |
+| FUTU_OPEND_VER            | OpenD version to build (compose `build.args`). Defaulted in `.env.example`; mirrors `opend_version.json`. |
 
 > **Note**: the compose file uses `network_mode: host` (and `build.network: host`) so the container shares the host's network stack. No `ports:` mapping is needed; OpenD's listeners bind directly on the host. This avoids docker-bridge connectivity issues we hit with Futu's auth servers.
 

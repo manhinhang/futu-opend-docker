@@ -58,7 +58,7 @@ it() × 6
 after → fullCleanup() → composeDown -v [+ rm .env.e2e if generated]
 ```
 
-A single compose file (`docker-compose.yaml`) is used. Container env values come from compose-time interpolation (`${VAR:-default}` in the `environment:` block); `.env` is auto-loaded for the bare `docker compose up` case, and the e2e test passes `--env-file .env.e2e` to inject real creds + WebSocket settings. The compose file uses `network_mode: host` (and `build.network: host`) by default — verified necessary for OpenD's outbound to Futu on this setup; bridge networking silently produces `>>>登录失败,网络异常`.
+A single compose file (`docker-compose.yaml`) is used. Container env values come from compose-time interpolation (`${VAR:-default}` in the `environment:` block); a user-created `.env` (copied from the tracked `.env.example` template; the user-local `.env` is gitignored) is auto-loaded for the bare `docker compose up` case, and the e2e test passes `--env-file .env.e2e` to inject real creds + WebSocket settings. The compose file uses `network_mode: host` (and `build.network: host`) by default — verified necessary for OpenD's outbound to Futu on this setup; bridge networking silently produces `>>>登录失败,网络异常`.
 
 ## Prerequisites (one-time)
 
