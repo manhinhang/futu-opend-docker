@@ -1,4 +1,4 @@
-// Sync FutuOpenD stableVersion across docs and .env in lockstep with
+// Sync FutuOpenD stableVersion across docs and .env.example in lockstep with
 // opend_version.json. Invoked by the daily Check Futu OpenD Version
 // workflow after check_version.js writes the JSON, so the same auto-merge
 // PR carries both the source-of-truth bump and every downstream literal.
@@ -19,7 +19,7 @@ const TARGET_FILES = [
   'CLAUDE.md',
   'AGENTS.md',
   'docs/E2E.md',
-  '.env'
+  '.env.example'
 ]
 
 const MARKER = '<!-- futu-opend-version -->'

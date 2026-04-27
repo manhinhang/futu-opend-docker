@@ -22,8 +22,9 @@ services:
     # No `ports:` block — `network_mode: host` ignores port mappings (with
     # a warning) and binds container ports directly on the host.
     # No `env_file:` — values come from `environment:` below via compose-time
-    # interpolation. Bare `docker compose up` auto-loads .env; the e2e test
-    # passes `--env-file .env.e2e`.
+    # interpolation. Bare `docker compose up` auto-loads .env (copy it from
+    # the tracked .env.example template first); the e2e test passes
+    # `--env-file .env.e2e`.
     environment:
       FUTU_ACCOUNT_ID: ${FUTU_ACCOUNT_ID:-}
       FUTU_ACCOUNT_PWD: ${FUTU_ACCOUNT_PWD:-}
