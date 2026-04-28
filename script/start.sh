@@ -4,9 +4,13 @@ FUTU_OPEND_RSA_FILE_PATH=/.futu/futu.pem
 FUTU_OPEND_IP=${FUTU_OPEND_IP:-$(cat /etc/hostname)}
 
 if [ -z "$FUTU_ACCOUNT_PWD_MD5" ]; then
+  if [ -n "$FUTU_ACCOUNT_PWD" ]; then
+    echo "WARNING: FUTU_ACCOUNT_PWD is deprecated; set FUTU_ACCOUNT_PWD_MD5 instead. See README." >&2
+  fi
   FUTU_ACCOUNT_PWD_MD5=$(echo -n "$FUTU_ACCOUNT_PWD" | md5sum | awk '{print $1}')
 fi
 
+# shellcheck disable=SC2153  # FUTU_ACCOUNT_ID is set externally (env var, not a typo of FUTU_ACCOUNT_PWD)
 echo "FUTU_ACCOUNT_ID: $FUTU_ACCOUNT_ID"
 echo "FUTU_OPEND_RSA_FILE_PATH: $FUTU_OPEND_RSA_FILE_PATH"
 echo "FUTU_OPEND_IP: $FUTU_OPEND_IP"

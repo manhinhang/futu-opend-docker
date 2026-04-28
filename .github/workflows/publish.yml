@@ -114,7 +114,7 @@ jobs:
           docker run -d \
             --name futu-opend-test \
             -e FUTU_ACCOUNT_ID="" \
-            -e FUTU_ACCOUNT_PWD="" \
+            -e FUTU_ACCOUNT_PWD_MD5="" \
             ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ matrix.FUTU_OPEND_VER }}
 
           echo "Waiting for FutuOpenD to start (timeout: 60s)..."

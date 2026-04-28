@@ -1,14 +1,16 @@
 // End-to-end test for the FutuOpenD docker image.
 //
-// Reads real credentials from FUTU_ACCOUNT_ID / FUTU_ACCOUNT_PWD env vars,
-// builds and starts the container with the gitignored ./futu.pem, handles
-// the first-run 2FA prompt interactively, and exercises the OpenAPI surface
-// with a live GetGlobalState call.
+// Reads real credentials from FUTU_ACCOUNT_ID plus FUTU_ACCOUNT_PWD_MD5
+// (preferred) or the deprecated FUTU_ACCOUNT_PWD env vars, builds and starts
+// the container with the gitignored ./futu.pem, handles the first-run 2FA
+// prompt interactively, and exercises the OpenAPI surface with a live
+// GetGlobalState call.
 //
 // Local-only by design. CI keeps its existing exit-code gate.
 //
 // Prerequisites:
-//   - FUTU_ACCOUNT_ID and FUTU_ACCOUNT_PWD env vars set
+//   - FUTU_ACCOUNT_ID and either FUTU_ACCOUNT_PWD_MD5 (preferred) or the
+//     deprecated FUTU_ACCOUNT_PWD env vars set
 //     (e.g. via `export FUTU_ACCOUNT_ID=$(op read "op://<vault>/<item>/username")`)
 //   - ./futu.pem exists
 //   - docker daemon running
@@ -95,19 +97,24 @@ function preflight ({ skipEnvCredCheck = false } = {}) {
 }
 
 function assertEnvCredentials () {
-  const missing = ['FUTU_ACCOUNT_ID', 'FUTU_ACCOUNT_PWD']
-    .filter((name) => !process.env[name])
-  if (missing.length > 0) {
+  if (!process.env.FUTU_ACCOUNT_ID) {
     throw new Error(
-      `Missing env var(s): ${missing.join(', ')}. ` +
-      'Set them in the shell that runs the test, e.g.:\n' +
-      '  export FUTU_ACCOUNT_ID=$(op read "op://<vault>/<item>/username")\n' +
-      '  export FUTU_ACCOUNT_PWD=$(op read "op://<vault>/<item>/password")\n' +
+      'Missing env var: FUTU_ACCOUNT_ID. ' +
+      'Set it in the shell that runs the test, e.g.:\n' +
+      '  export FUTU_ACCOUNT_ID=$(op read "op://<vault>/<item>/username")'
+    )
+  }
+  if (!process.env.FUTU_ACCOUNT_PWD_MD5 && !process.env.FUTU_ACCOUNT_PWD) {
+    throw new Error(
+      'Missing password env var. Set FUTU_ACCOUNT_PWD_MD5 (preferred) or ' +
+      'the deprecated FUTU_ACCOUNT_PWD, e.g.:\n' +
+      '  export FUTU_ACCOUNT_PWD_MD5=$(op read "op://<vault>/<item>/password" | tr -d "\\n" | md5sum | awk \'{print $1}\')\n' +
       'Or pre-populate .env.e2e (see docs/E2E.md).'
     )
   }
-  const malformed = ['FUTU_ACCOUNT_ID', 'FUTU_ACCOUNT_PWD']
-    .filter((name) => /[\r\n]/.test(process.env[name]))
+  const checkNewline = ['FUTU_ACCOUNT_ID', 'FUTU_ACCOUNT_PWD_MD5', 'FUTU_ACCOUNT_PWD']
+  const malformed = checkNewline
+    .filter((name) => process.env[name] && /[\r\n]/.test(process.env[name]))
   if (malformed.length > 0) {
     throw new Error(
       `${malformed.join(', ')} contain newline(s). ` +
@@ -120,6 +127,7 @@ function assertEnvCredentials () {
 function readEnvCredentials () {
   return {
     accountId: process.env.FUTU_ACCOUNT_ID,
+    accountPwdMd5: process.env.FUTU_ACCOUNT_PWD_MD5,
     accountPwd: process.env.FUTU_ACCOUNT_PWD
   }
 }
@@ -132,7 +140,7 @@ function readStableOpendVersion () {
   return raw.stableVersion
 }
 
-function writeEnvFile ({ accountId, accountPwd }) {
+function writeEnvFile ({ accountId, accountPwdMd5, accountPwd }) {
   // Quote values to survive special chars (compose env-file is naive).
   // FUTU_OPEND_WEBSOCKET_PORT/_IP are read by start.sh inside the container
   // to enable the WebSocket listener (see script/start.sh).
@@ -141,15 +149,21 @@ function writeEnvFile ({ accountId, accountPwd }) {
   // FUTU_OPEND_IP=0.0.0.0 — the compose file runs network_mode: host and
   // start.sh's default `cat /etc/hostname` resolves to the host's hostname
   // (not routable inside the container's view of the host stack).
-  const lines = [
-    `FUTU_ACCOUNT_ID=${accountId}`,
-    `FUTU_ACCOUNT_PWD=${accountPwd}`,
+  const lines = [`FUTU_ACCOUNT_ID=${accountId}`]
+  // Prefer MD5 — start.sh consumes it directly without re-hashing and skips
+  // the deprecation warning. Fall back to plaintext if only that's set.
+  if (accountPwdMd5) {
+    lines.push(`FUTU_ACCOUNT_PWD_MD5=${accountPwdMd5}`)
+  } else {
+    lines.push(`FUTU_ACCOUNT_PWD=${accountPwd}`)
+  }
+  lines.push(
     `LOCAL_RSA_FILE_PATH=${PEM_FILE}`,
     `FUTU_OPEND_IP=0.0.0.0`,
     `FUTU_OPEND_WEBSOCKET_PORT=${WS_PORT}`,
     'FUTU_OPEND_WEBSOCKET_IP=0.0.0.0',
     `FUTU_OPEND_VER=${readStableOpendVersion()}`
-  ]
+  )
   writeFileSync(ENV_FILE, lines.join('\n') + '\n', { mode: 0o600 })
 }
 
@@ -351,8 +365,10 @@ function prepareInputs () {
     output.write(`[e2e] using pre-populated ${ENV_FILE} (skipping env-var read)\n`)
   } else {
     const creds = readEnvCredentials()
+    const pwdSource = creds.accountPwdMd5 ? 'FUTU_ACCOUNT_PWD_MD5' : 'FUTU_ACCOUNT_PWD'
     output.write(
-      `[e2e] credentials from env: id length=${creds.accountId.length}, pwd length=${creds.accountPwd.length}\n`
+      `[e2e] credentials from env: id length=${creds.accountId.length}, ` +
+      `pwd source=${pwdSource}\n`
     )
     writeEnvFile(creds)
   }

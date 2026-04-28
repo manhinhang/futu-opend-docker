@@ -35,9 +35,12 @@ docker pull ghcr.io/manhinhang/futu-opend-docker:ubuntu-stable
 > ```
 
 ```bash
+# Compute the password MD5 so plaintext never lands in your shell history.
+FUTU_ACCOUNT_PWD_MD5=$(echo -n '<your_password>' | md5sum | awk '{print $1}')
+
 docker run -it --name futu-opend-docker \
 -e FUTU_ACCOUNT_ID=<your_account_id> \
--e FUTU_ACCOUNT_PWD=<your_password> \
+-e FUTU_ACCOUNT_PWD_MD5="$FUTU_ACCOUNT_PWD_MD5" \
 -v $(pwd)/futu.pem:/.futu/futu.pem \
 -v futu-opend-data:/home/futu/.com.futunn.FutuOpenD \
 -p 11111:11111 \
@@ -45,6 +48,11 @@ docker run -it --name futu-opend-docker \
 ghcr.io/manhinhang/futu-opend-docker
 ```
 
+> `FUTU_ACCOUNT_PWD` (plaintext) is still accepted as a legacy fallback —
+> the container hashes it at runtime and emits a stderr deprecation warning.
+> Prefer `FUTU_ACCOUNT_PWD_MD5` to keep plaintext out of agent transcripts,
+> shared shell sessions, and `docker compose config` output.
+>
 > The `futu-opend-data` named volume keeps FutuOpenD's login session across
 > container recreates so SMS verification isn't required on every restart.
 > See [Login session persistence](#login-session-persistence) for details.
@@ -160,17 +168,17 @@ Copy the tracked `.env.example` template to `.env`, then edit it (auto-loaded by
 cp .env.example .env
 ```
 
-| Environment Variable      | Description                                                                                               |
-| ------------------------- | --------------------------------------------------------------------------------------------------------- |
-| FUTU_ACCOUNT_ID           | Futu account ID                                                                                           |
-| FUTU_ACCOUNT_PWD          | Futu account password (ignored if FUTU_ACCOUNT_PWD_MD5 is set)                                            |
-| FUTU_ACCOUNT_PWD_MD5      | Futu account password MD5 hash (takes priority over FUTU_ACCOUNT_PWD)                                     |
-| FUTU_OPEND_IP             | OpenD bind address inside the container (default: `0.0.0.0`)                                              |
-| FUTU_OPEND_PORT           | Futu OpenD API Port in container (default: 11111)                                                         |
-| FUTU_OPEND_TELNET_PORT    | Futu OpenD Telnet Port (default: 22222)                                                                   |
-| FUTU_OPEND_WEBSOCKET_PORT | Enable WebSocket listener on this port (default: disabled).                                               |
-| FUTU_OPEND_WEBSOCKET_IP   | WebSocket bind address (default: 0.0.0.0 when FUTU_OPEND_WEBSOCKET_PORT is set, else not applied)         |
-| FUTU_OPEND_VER            | OpenD version to build (compose `build.args`). Defaulted in `.env.example`; mirrors `opend_version.json`. |
+| Environment Variable      | Description                                                                                                                                                      |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FUTU_ACCOUNT_ID           | Futu account ID                                                                                                                                                  |
+| FUTU_ACCOUNT_PWD_MD5      | **Preferred.** Futu account password MD5 hash. Compute with `echo -n '<pwd>' \| md5sum \| awk '{print $1}'`.                                                     |
+| FUTU_ACCOUNT_PWD          | **Deprecated.** Plaintext password — hashed at runtime by `start.sh`; ignored if `FUTU_ACCOUNT_PWD_MD5` is set. Triggers a stderr deprecation warning when used. |
+| FUTU_OPEND_IP             | OpenD bind address inside the container (default: `0.0.0.0`)                                                                                                     |
+| FUTU_OPEND_PORT           | Futu OpenD API Port in container (default: 11111)                                                                                                                |
+| FUTU_OPEND_TELNET_PORT    | Futu OpenD Telnet Port (default: 22222)                                                                                                                          |
+| FUTU_OPEND_WEBSOCKET_PORT | Enable WebSocket listener on this port (default: disabled).                                                                                                      |
+| FUTU_OPEND_WEBSOCKET_IP   | WebSocket bind address (default: 0.0.0.0 when FUTU_OPEND_WEBSOCKET_PORT is set, else not applied)                                                                |
+| FUTU_OPEND_VER            | OpenD version to build (compose `build.args`). Defaulted in `.env.example`; mirrors `opend_version.json`.                                                        |
 
 > **Note**: the compose file uses `network_mode: host` (and `build.network: host`) so the container shares the host's network stack. No `ports:` mapping is needed; OpenD's listeners bind directly on the host. This avoids docker-bridge connectivity issues we hit with Futu's auth servers.
 
@@ -301,7 +309,7 @@ If you encounter download failures during build:
 If the container fails to start:
 
 1. **RSA key**: Ensure `futu.pem` exists and is properly mounted at `/.futu/futu.pem`
-2. **Environment variables**: Verify `FUTU_ACCOUNT_ID` and either `FUTU_ACCOUNT_PWD` or `FUTU_ACCOUNT_PWD_MD5` are set
+2. **Environment variables**: Verify `FUTU_ACCOUNT_ID` and either `FUTU_ACCOUNT_PWD_MD5` (preferred) or the deprecated `FUTU_ACCOUNT_PWD` are set
 3. **Verification required**: First run may require verification codes
 4. **Stale session state**: if you've changed accounts or upgraded OpenD across major versions, wipe the data volume — see [Login session persistence](#login-session-persistence).
 
@@ -322,7 +330,7 @@ FutuOpenD may prompt for two types of verification:
 
 ## Local end-to-end test
 
-A `node:test` suite that takes credentials from `FUTU_ACCOUNT_ID`/`FUTU_ACCOUNT_PWD` env vars, drives a real login (with SMS support), and asserts the OpenAPI WebSocket layer is up. Local-only — `npm run test:e2e`.
+A `node:test` suite that takes credentials from `FUTU_ACCOUNT_ID` plus `FUTU_ACCOUNT_PWD_MD5` (preferred) or the deprecated `FUTU_ACCOUNT_PWD`, drives a real login (with SMS support), and asserts the OpenAPI WebSocket layer is up. Local-only — `npm run test:e2e`.
 
 See [docs/E2E.md](docs/E2E.md) for prerequisites, architecture, and troubleshooting.
 

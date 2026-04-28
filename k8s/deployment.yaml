@@ -71,17 +71,19 @@ spec:
                 secretKeyRef:
                   name: futu-credentials
                   key: FUTU_ACCOUNT_ID
-            - name: FUTU_ACCOUNT_PWD
-              valueFrom:
-                secretKeyRef:
-                  name: futu-credentials
-                  key: FUTU_ACCOUNT_PWD
-                  optional: true
+            # FUTU_ACCOUNT_PWD_MD5 is preferred; FUTU_ACCOUNT_PWD is deprecated
+            # (start.sh hashes plaintext at runtime and emits a stderr warning).
             - name: FUTU_ACCOUNT_PWD_MD5
               valueFrom:
                 secretKeyRef:
                   name: futu-credentials
                   key: FUTU_ACCOUNT_PWD_MD5
+                  optional: true
+            - name: FUTU_ACCOUNT_PWD
+              valueFrom:
+                secretKeyRef:
+                  name: futu-credentials
+                  key: FUTU_ACCOUNT_PWD
                   optional: true
             - name: FUTU_OPEND_RSA_FILE_PATH
               value: /.futu/futu.pem

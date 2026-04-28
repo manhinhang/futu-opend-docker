@@ -38,7 +38,8 @@
 //   - docker daemon running
 //   - ./futu.pem (mode 0644)
 //   - The image present locally (kind side-loads from host docker)
-//   - FUTU_ACCOUNT_ID / FUTU_ACCOUNT_PWD or .env.e2e
+//   - FUTU_ACCOUNT_ID plus FUTU_ACCOUNT_PWD_MD5 (preferred) or the
+//     deprecated FUTU_ACCOUNT_PWD, or .env.e2e
 //
 // Prerequisites (existing backend):
 //   - kubectl on PATH with a context pointing at a real cluster
@@ -176,29 +177,41 @@ function parseEnvFile (text) {
 function readCredentials () {
   if (existsSync(ENV_FILE)) {
     const map = parseEnvFile(readFileSync(ENV_FILE, 'utf8'))
-    if (map.FUTU_ACCOUNT_ID && map.FUTU_ACCOUNT_PWD) {
+    if (map.FUTU_ACCOUNT_ID && (map.FUTU_ACCOUNT_PWD_MD5 || map.FUTU_ACCOUNT_PWD)) {
       output.write(`[k8s-e2e] credentials sourced from ${ENV_FILE}\n`)
-      return { accountId: map.FUTU_ACCOUNT_ID, accountPwd: map.FUTU_ACCOUNT_PWD }
+      return {
+        accountId: map.FUTU_ACCOUNT_ID,
+        accountPwdMd5: map.FUTU_ACCOUNT_PWD_MD5,
+        accountPwd: map.FUTU_ACCOUNT_PWD
+      }
     }
   }
   const id = process.env.FUTU_ACCOUNT_ID
+  const pwdMd5 = process.env.FUTU_ACCOUNT_PWD_MD5
   const pwd = process.env.FUTU_ACCOUNT_PWD
-  const missing = []
-  if (!id) missing.push('FUTU_ACCOUNT_ID')
-  if (!pwd) missing.push('FUTU_ACCOUNT_PWD')
-  if (missing.length > 0) {
+  if (!id) {
     throw new Error(
-      `Missing env var(s): ${missing.join(', ')}. ` +
-      'Set them in the shell or pre-populate .env.e2e.'
+      'Missing env var: FUTU_ACCOUNT_ID. ' +
+      'Set it in the shell or pre-populate .env.e2e.'
     )
   }
-  if (/[\r\n]/.test(id) || /[\r\n]/.test(pwd)) {
-    throw new Error('FUTU_ACCOUNT_ID/FUTU_ACCOUNT_PWD contain newline(s) — strip them.')
+  if (!pwdMd5 && !pwd) {
+    throw new Error(
+      'Missing password env var. Set FUTU_ACCOUNT_PWD_MD5 (preferred) or ' +
+      'the deprecated FUTU_ACCOUNT_PWD, or pre-populate .env.e2e.'
+    )
   }
+  for (const [name, value] of [['FUTU_ACCOUNT_ID', id], ['FUTU_ACCOUNT_PWD_MD5', pwdMd5], ['FUTU_ACCOUNT_PWD', pwd]]) {
+    if (value && /[\r\n]/.test(value)) {
+      throw new Error(`${name} contains newline(s) — strip them.`)
+    }
+  }
+  const pwdSource = pwdMd5 ? 'FUTU_ACCOUNT_PWD_MD5' : 'FUTU_ACCOUNT_PWD'
   output.write(
-    `[k8s-e2e] credentials from env: id length=${id.length}, pwd length=${pwd.length}\n`
+    `[k8s-e2e] credentials from env: id length=${id.length}, ` +
+    `pwd source=${pwdSource}\n`
   )
-  return { accountId: id, accountPwd: pwd }
+  return { accountId: id, accountPwdMd5: pwdMd5, accountPwd: pwd }
 }
 
 async function readSmsCodeFromDrop () {
@@ -547,10 +560,17 @@ async function setupCluster () {
     // by the helper, so neither argv nor /proc/<pid>/cmdline ever sees the
     // password.
     fromFile: { 'futu.pem': PEM_FILE },
-    fromLiteral: {
-      FUTU_ACCOUNT_ID: creds.accountId,
-      FUTU_ACCOUNT_PWD: creds.accountPwd
-    }
+    // Pass MD5 if available so the cluster never sees plaintext;
+    // fall back to the deprecated plaintext only if that's all we got.
+    fromLiteral: creds.accountPwdMd5
+      ? {
+        FUTU_ACCOUNT_ID: creds.accountId,
+        FUTU_ACCOUNT_PWD_MD5: creds.accountPwdMd5
+      }
+      : {
+        FUTU_ACCOUNT_ID: creds.accountId,
+        FUTU_ACCOUNT_PWD: creds.accountPwd
+      }
   })
 
   output.write(`[k8s-e2e] kubectl apply -k k8s/…\n`)
