@@ -1,6 +1,6 @@
 # Local end-to-end test
 
-A `node:test` suite (`script/e2e.test.mjs`) that drives the published FutuOpenD container with **real credentials** and asserts the OpenAPI WebSocket layer is actually up. Local-only — credentials are passed in via env vars, not stored in the repo, not in CI.
+A `node:test` suite (`script/e2e.test.mjs`) that drives the published FutuOpenD container with **real credentials** and asserts the OpenAPI WebSocket layer is actually up. Local-only — credentials are passed in via env vars (`FUTU_ACCOUNT_PWD_MD5` preferred over the deprecated plaintext `FUTU_ACCOUNT_PWD`), not stored in the repo, not in CI.
 
 ## Why
 
@@ -39,9 +39,10 @@ e2e.test.mjs (before)
     │
     ├── preflight()              docker, futu.pem, opend_version.json, env-var creds
     │                             (or pre-populated .env.e2e)
-    ├── readEnvCredentials() ── FUTU_ACCOUNT_ID / FUTU_ACCOUNT_PWD from process.env
+    ├── readEnvCredentials() ── FUTU_ACCOUNT_ID + FUTU_ACCOUNT_PWD_MD5 (preferred)
+    │                             or the deprecated FUTU_ACCOUNT_PWD, from process.env
     │   └── writeEnvFile()       .env.e2e (mode 0600)
-    │                             • FUTU_ACCOUNT_ID / FUTU_ACCOUNT_PWD (login)
+    │                             • FUTU_ACCOUNT_ID / FUTU_ACCOUNT_PWD_MD5 or FUTU_ACCOUNT_PWD (login)
     │                             • LOCAL_RSA_FILE_PATH (host bind-mount)
     │                             • FUTU_OPEND_WEBSOCKET_PORT=33333 / FUTU_OPEND_WEBSOCKET_IP=0.0.0.0
     │                               (read by start.sh inside the container)
@@ -63,11 +64,14 @@ A single compose file (`docker-compose.yaml`) is used. Container env values come
 ## Prerequisites (one-time)
 
 1. **Docker daemon running.**
-2. **`FUTU_ACCOUNT_ID` and `FUTU_ACCOUNT_PWD` env vars set** in the shell that runs `npm run test:e2e`. The test reads them directly from `process.env` and writes the generated `.env.e2e` itself. Source them however you like — 1Password CLI, password manager, manual export. With the `op` CLI:
+2. **`FUTU_ACCOUNT_ID` plus `FUTU_ACCOUNT_PWD_MD5` (preferred) or the deprecated `FUTU_ACCOUNT_PWD` env vars set** in the shell that runs `npm run test:e2e`. The test reads them directly from `process.env` and writes the generated `.env.e2e` itself. Source them however you like — 1Password CLI, password manager, manual export. With the `op` CLI:
 
    ```bash
    export FUTU_ACCOUNT_ID=$(op read "op://<vault>/<item>/username")
-   export FUTU_ACCOUNT_PWD=$(op read "op://<vault>/<item>/password")
+   # Preferred: MD5 hash so plaintext never enters the shell or .env.e2e.
+   export FUTU_ACCOUNT_PWD_MD5=$(op read "op://<vault>/<item>/password" | tr -d '\n' | md5sum | awk '{print $1}')
+   # Legacy fallback (deprecated; still accepted by the harness):
+   # export FUTU_ACCOUNT_PWD=$(op read "op://<vault>/<item>/password")
    ```
 
    Replace `<vault>` and `<item>` with your own UUIDs (extract from your 1Password share URL: `&v=<vault>&i=<item>`). The test never invokes `op` — it has no opinion on where the values come from. If you can't set env vars in the launching shell (e.g. non-interactive agent), see the **Pre-populating .env.e2e** subsection below.
@@ -94,7 +98,10 @@ A single compose file (`docker-compose.yaml`) is used. Container env values come
 ```bash
 # 1. Export creds in the shell. Source them however you like.
 export FUTU_ACCOUNT_ID=$(op read "op://<vault>/<item>/username")
-export FUTU_ACCOUNT_PWD=$(op read "op://<vault>/<item>/password")
+# Preferred — MD5 hash, never plaintext:
+export FUTU_ACCOUNT_PWD_MD5=$(op read "op://<vault>/<item>/password" | tr -d '\n' | md5sum | awk '{print $1}')
+# Or, deprecated legacy fallback:
+# export FUTU_ACCOUNT_PWD=$(op read "op://<vault>/<item>/password")
 
 # 2. Run the test.
 npm install
@@ -114,11 +121,14 @@ The test detects an existing `.env.e2e` and skips the env-var read entirely (`sc
 - The shell launching `npm run test:e2e` can't export env vars (e.g. non-interactive agent runner).
 - You want to source credentials from somewhere other than env vars (1Password file, manual paste, etc.).
 
-Minimal `.env.e2e` template:
+Minimal `.env.e2e` template (use `FUTU_ACCOUNT_PWD_MD5`; the deprecated
+`FUTU_ACCOUNT_PWD` is still accepted but triggers a stderr warning at startup):
 
 ```bash
 FUTU_ACCOUNT_ID=<your-account-id>
-FUTU_ACCOUNT_PWD=<your-password>
+FUTU_ACCOUNT_PWD_MD5=<md5-of-your-password>
+# Or, deprecated legacy fallback:
+# FUTU_ACCOUNT_PWD=<your-password>
 LOCAL_RSA_FILE_PATH=/absolute/path/to/futu.pem
 FUTU_OPEND_WEBSOCKET_PORT=33333
 FUTU_OPEND_WEBSOCKET_IP=0.0.0.0
@@ -144,7 +154,7 @@ The 5-minute file-drop timeout is enough for a normal SMS round-trip; the overal
 
 | File                                 | Role                                                                                                                                                                                                                                                                                                                                                                            |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `script/e2e.test.mjs`                | The `node:test` suite + `before/after` orchestration. Holds `waitForReady`, `wsHandshake`, `tcpProbe`, and the SMS handlers. Reads `FUTU_ACCOUNT_ID`/`FUTU_ACCOUNT_PWD` from env.                                                                                                                                                                                               |
+| `script/e2e.test.mjs`                | The `node:test` suite + `before/after` orchestration. Holds `waitForReady`, `wsHandshake`, `tcpProbe`, and the SMS handlers. Reads `FUTU_ACCOUNT_ID` plus `FUTU_ACCOUNT_PWD_MD5` (preferred) or the deprecated `FUTU_ACCOUNT_PWD` from env.                                                                                                                                     |
 | `script/start.sh`                    | Runs inside the container. Sed-substitutes the XML config; if `FUTU_OPEND_WEBSOCKET_PORT` is set, also uncomments `<websocket_port>` / `<websocket_ip>` to enable the WS listener.                                                                                                                                                                                              |
 | `script/lib/docker.mjs`              | `composeUp`/`composeDown`, `inspectHealth`/`inspectExitCode`, `getLogs`, `pgrepFutuOpend`, `tailLogs(container, onLine)`, and `sendTelnetCommand(line)`.                                                                                                                                                                                                                        |
 | `script/lib/_pending/futu-probe.mjs` | **Not active.** Stub for the future SDK round-trip experiment — references the `futu-api` npm package, which is intentionally not in `package.json`. See [Future work](#future-work).                                                                                                                                                                                           |
@@ -199,7 +209,7 @@ The active suite asserts the WS upgrade returns HTTP 101 — that's enough to pr
 
 ### Credentials can leak via debug commands
 
-`docker compose config` and `docker exec <container> env` both print container env in plaintext, including `FUTU_ACCOUNT_PWD`. **Avoid both** when sharing your screen, pasting into a chat, or running in an agent session whose transcript persists. If credentials surface unintentionally, rotate the Futu password and update the 1Password item.
+`docker compose config` and `docker exec <container> env` both print container env in plaintext, including `FUTU_ACCOUNT_PWD` if it's set, and `FUTU_ACCOUNT_PWD_MD5` regardless. **Avoid both** when sharing your screen, pasting into a chat, or running in an agent session whose transcript persists. Prefer `FUTU_ACCOUNT_PWD_MD5` so plaintext never enters the surface area in the first place. If credentials surface unintentionally, rotate the Futu password and update the 1Password item.
 
 ## Operational notes
 

@@ -68,8 +68,8 @@ Docker containerization for Futu OpenD — a trading API gateway for Futu Securi
 
 - **Multi-stage Docker**: `final-ubuntu-target` / `final-centos-target` selected by build `--target`; the unparameterised `final` alias defaults to Ubuntu. The `BASE_IMG` build arg is declared but no longer routes between targets — pass `--target` explicitly.
 - **Non-root user**: All images run as `futu` user (created at build).
-- **Env var injection**: `FUTU_ACCOUNT_ID`, `FUTU_ACCOUNT_PWD`, `FUTU_ACCOUNT_PWD_MD5` (priority over PWD), `FUTU_OPEND_RSA_FILE_PATH`, `FUTU_OPEND_IP`, `FUTU_OPEND_PORT` (11111), `FUTU_OPEND_TELNET_PORT` (22222), `FUTU_OPEND_WEBSOCKET_PORT` / `FUTU_OPEND_WEBSOCKET_IP` (optional).
-- **Password hashing**: MD5 of password computed at runtime by `start.sh` if `FUTU_ACCOUNT_PWD_MD5` is unset.
+- **Env var injection**: `FUTU_ACCOUNT_ID`, `FUTU_ACCOUNT_PWD_MD5` (preferred), `FUTU_ACCOUNT_PWD` (deprecated; legacy fallback), `FUTU_OPEND_RSA_FILE_PATH`, `FUTU_OPEND_IP`, `FUTU_OPEND_PORT` (11111), `FUTU_OPEND_TELNET_PORT` (22222), `FUTU_OPEND_WEBSOCKET_PORT` / `FUTU_OPEND_WEBSOCKET_IP` (optional).
+- **Password hashing**: `FUTU_ACCOUNT_PWD_MD5` consumed directly. If unset, `start.sh` MD5-hashes `FUTU_ACCOUNT_PWD` at runtime and emits a stderr deprecation warning.
 - **Version tracking**: `opend_version.json` updated by scheduled CI; triggers PR on change.
 - **ESM boundary**: e2e code is `.mjs` (ESM); `check_version.test.js` stays CJS. Don't add `"type": "module"` to `package.json` until that migrates.
 - **Module conventions**: `script/lib/_pending/` holds parked experiments; never import from there in shipping code.
@@ -119,7 +119,7 @@ Local-only `node:test` suite that drives a real login. CI keeps its existing exi
 
 - **Entrypoint**: `script/e2e.test.mjs` — 6 assertions (health ≠ unhealthy, `pgrep`, TCP `11111`, no login-failure markers, WebSocket HTTP `101` on `33333`, post-test health).
 - **Helpers**: `script/lib/docker.mjs` — `composeUp`, `composeDown`, `sendTelnetCommand`, `tailLogs`, `inspectHealth`, `waitForHealthy`.
-- **Inputs**: `FUTU_ACCOUNT_ID` / `FUTU_ACCOUNT_PWD` env vars, or pre-populated `.env.e2e` (mode `0600`).
+- **Inputs**: `FUTU_ACCOUNT_ID` plus `FUTU_ACCOUNT_PWD_MD5` (preferred) or the deprecated `FUTU_ACCOUNT_PWD` env vars, or a pre-populated `.env.e2e` (mode `0600`).
 - **2FA**: telnet to `22222` with CRLF; non-TTY drop at `/tmp/futu-sms-code` polled every 1 s (5 min budget).
 - **Ready signal**: log marker `>>>WebSocket监听地址` (post-login) plus TCP probes on `11111` and `33333`.
 - **Run**: `npm run test:e2e` (10-minute overall budget).

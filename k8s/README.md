@@ -55,13 +55,15 @@ openssl genrsa -out futu.pem 1024
 chmod 0644 futu.pem
 
 # 2. Create the namespace and credentials Secret out-of-band so the key never
-#    touches a YAML file in git.
+#    touches a YAML file in git. Pass the password as an MD5 hash so the
+#    cluster never sees plaintext (compute with
+#    `echo -n '<password>' | md5sum | awk '{print $1}'`).
 kubectl create namespace futu-opend
 kubectl create secret generic futu-credentials \
   --namespace futu-opend \
   --from-file=futu.pem=./futu.pem \
   --from-literal=FUTU_ACCOUNT_ID=<your-id> \
-  --from-literal=FUTU_ACCOUNT_PWD=<your-password>
+  --from-literal=FUTU_ACCOUNT_PWD_MD5=<md5-of-your-password>
 
 # 3. Apply the manifests.
 kubectl apply -k k8s/
@@ -74,20 +76,21 @@ kubectl -n futu-opend logs -f deployment/futu-opend
 To enable WebSocket on port `33333`, uncomment the two `FUTU_OPEND_WEBSOCKET_*`
 env entries in `deployment.yaml` before applying.
 
-To use `FUTU_ACCOUNT_PWD_MD5` instead of `FUTU_ACCOUNT_PWD` (so the cluster
-never sees the plaintext password), pass `--from-literal=FUTU_ACCOUNT_PWD_MD5=<md5>`
-to step 2 instead of `FUTU_ACCOUNT_PWD`. The Secret keys are picked up via
-`optional: true` `secretKeyRef`s in `deployment.yaml`.
+`FUTU_ACCOUNT_PWD` (plaintext) is still accepted as a legacy fallback —
+pass `--from-literal=FUTU_ACCOUNT_PWD=<your-password>` instead of the
+MD5 form above. `start.sh` hashes plaintext at runtime and emits a stderr
+deprecation warning. The Secret keys are picked up via `optional: true`
+`secretKeyRef`s in `deployment.yaml` regardless of which form you use.
 
 > **Heads-up — `--from-literal` puts the value in argv.** While `kubectl
-create secret …` runs, the password is briefly visible in
+create secret …` runs, the password (or MD5) is briefly visible in
 > `/proc/<pid>/cmdline` to anyone who can read it on the host you ran
 > `kubectl` from. The exposure window is sub-second, but on a shared box
 > prefer a 0600 env file:
 >
 > ```bash
 > umask 077
-> printf 'FUTU_ACCOUNT_PWD=%s\n' "$YOUR_PWD" > /tmp/futu-pwd.env
+> printf 'FUTU_ACCOUNT_PWD_MD5=%s\n' "$YOUR_PWD_MD5" > /tmp/futu-pwd.env
 > kubectl create secret generic futu-credentials \
 >   --namespace futu-opend \
 >   --from-file=futu.pem=./futu.pem \
@@ -203,7 +206,7 @@ kubectl create secret generic futu-credentials \
   --namespace futu-opend \
   --from-file=futu.pem=./futu.pem \
   --from-literal=FUTU_ACCOUNT_ID=<new-id> \
-  --from-literal=FUTU_ACCOUNT_PWD=<new-password>
+  --from-literal=FUTU_ACCOUNT_PWD_MD5=<md5-of-new-password>
 kubectl -n futu-opend rollout restart deployment/futu-opend
 
 # Reset the device whitelist (forces a fresh SMS on next start)
@@ -236,7 +239,7 @@ kubectl create secret generic futu-credentials \
   --namespace futu-opend \
   --from-file=futu.pem=/tmp/futu.pem \
   --from-literal=FUTU_ACCOUNT_ID=dummy \
-  --from-literal=FUTU_ACCOUNT_PWD=dummy
+  --from-literal=FUTU_ACCOUNT_PWD_MD5=dummy
 
 # Server-side dry-run, then real apply.
 kubectl apply -k k8s/ --dry-run=server
@@ -270,7 +273,10 @@ manifest-equivalence test.
 # Common to both backends
 openssl genrsa -out futu.pem 1024 && chmod 0644 futu.pem
 export FUTU_ACCOUNT_ID=$(op read "op://<vault>/<item>/username")
-export FUTU_ACCOUNT_PWD=$(op read "op://<vault>/<item>/password")
+# Preferred: MD5 hash so plaintext never enters the shell or the cluster.
+export FUTU_ACCOUNT_PWD_MD5=$(op read "op://<vault>/<item>/password" | tr -d '\n' | md5sum | awk '{print $1}')
+# Legacy fallback (deprecated; the harness still accepts it):
+# export FUTU_ACCOUNT_PWD=$(op read "op://<vault>/<item>/password")
 # (or pre-populate .env.e2e)
 
 # kind backend only
