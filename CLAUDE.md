@@ -68,6 +68,7 @@ echo 123456 > /tmp/futu-sms-code
 
 ## Pointers
 
+- **Install / day-2 ops runbook (load this first)** → [skills/futu-opend/SKILL.md](skills/futu-opend/SKILL.md). Use it whenever the user asks to install, set up, deploy, restart, re-login, send an SMS code to, bump the version of, or troubleshoot FutuOpenD on compose / `docker run` / k8s.
 - Project knowledge base (file map, conventions, anti-patterns, version/port reference) → [AGENTS.md](AGENTS.md)
 - E2E harness deep-dive (architecture, prerequisites, 2FA handling, troubleshooting) → [docs/E2E.md](docs/E2E.md)
 - User-facing usage (image tags, prerequisites, login flow) → [README.md](README.md)
