@@ -69,11 +69,11 @@ context). Match the wording: "compose" / "kubernetes" / "k8s" /
 
 Required tools by target:
 
-| Target      | Tools                                            |
-|-------------|--------------------------------------------------|
-| `compose`   | `docker`, `docker compose`, `openssl`, `telnet` or `nc` |
-| `docker-run`| `docker`, `openssl`, `telnet` or `nc`            |
-| `k8s`       | `kubectl`, `openssl`, `telnet` or `nc`           |
+| Target       | Tools                                                   |
+| ------------ | ------------------------------------------------------- |
+| `compose`    | `docker`, `docker compose`, `openssl`, `telnet` or `nc` |
+| `docker-run` | `docker`, `openssl`, `telnet` or `nc`                   |
+| `k8s`        | `kubectl`, `openssl`, `telnet` or `nc`                  |
 
 Probe with `command -v <tool>`. If anything is missing, surface it with a
 one-line install hint (e.g. `apt-get install -y telnet`) and stop.
@@ -120,11 +120,11 @@ Branch into the target's reference file and follow it end-to-end:
 
 ### 6. Watch logs for the 2FA prompt
 
-| Target      | Command                                                  |
-|-------------|----------------------------------------------------------|
-| `compose`   | `docker compose logs -f futu-opend`                      |
-| `docker-run`| `docker logs -f futu-opend-docker`                       |
-| `k8s`       | `kubectl -n futu-opend logs -f deployment/futu-opend`    |
+| Target       | Command                                               |
+| ------------ | ----------------------------------------------------- |
+| `compose`    | `docker compose logs -f futu-opend`                   |
+| `docker-run` | `docker logs -f futu-opend-docker`                    |
+| `k8s`        | `kubectl -n futu-opend logs -f deployment/futu-opend` |
 
 Look for these signals:
 
@@ -198,8 +198,8 @@ the user's wording. If unclear, use AskUserQuestion with these options
   or `kubectl -n futu-opend rollout restart deployment/futu-opend`.
 - **Wipe session (forces SMS)** — `docker compose down -v` (compose) or
   `kubectl -n futu-opend scale deployment/futu-opend --replicas=0 &&
-  kubectl -n futu-opend delete pvc futu-opend-data && kubectl -n
-  futu-opend scale deployment/futu-opend --replicas=1` (k8s). **Always
+kubectl -n futu-opend delete pvc futu-opend-data && kubectl -n
+futu-opend scale deployment/futu-opend --replicas=1` (k8s). **Always
   confirm** — this costs a fresh SMS code on the next start.
 - **Version bump** — change `FUTU_OPEND_VER` in `.env` (compose), the
   image tag in `deployment.yaml` (k8s), or the `docker run` image tag.
@@ -208,7 +208,7 @@ the user's wording. If unclear, use AskUserQuestion with these options
   → `centos-stable`) or the `--target` flag for local builds.
 - **Tear down** — `docker compose down` (keeps session) vs. `down -v`
   (wipes), or `kubectl delete -k k8s/` plus an explicit `kubectl delete
-  pvc/secret`. Always make data-loss explicit.
+pvc/secret`. Always make data-loss explicit.
 
 ## Phase B(troubleshoot)
 

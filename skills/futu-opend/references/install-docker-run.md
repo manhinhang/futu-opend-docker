@@ -13,13 +13,13 @@ run it".
 
 3. **Pick the image tag.** Defaults to `:ubuntu-stable`. Other options:
 
-   | Tag                              | Use case                          |
-   |----------------------------------|-----------------------------------|
-   | `ubuntu-stable`                  | Default; tracks current stable    |
-   | `centos-stable`                  | CentOS 7 runtime                  |
-   | `ubuntu-{version}` (e.g. `ubuntu-10.4.6408`) | Pinned version, ubuntu base |
-   | `centos-{version}`               | Pinned version, centos base       |
-   | `ubuntu-beta` / `centos-beta`    | Beta channel (when published)     |
+   | Tag                                          | Use case                       |
+   | -------------------------------------------- | ------------------------------ |
+   | `ubuntu-stable`                              | Default; tracks current stable |
+   | `centos-stable`                              | CentOS 7 runtime               |
+   | `ubuntu-{version}` (e.g. `ubuntu-10.4.6408`) | Pinned version, ubuntu base    |
+   | `centos-{version}`                           | Pinned version, centos base    |
+   | `ubuntu-beta` / `centos-beta`                | Beta channel (when published)  |
 
    Source of truth for the current stable version: `opend_version.json`.
 

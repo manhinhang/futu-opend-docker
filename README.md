@@ -7,7 +7,7 @@ lightweight futu opend docker
 
 > **Running on Kubernetes?** See [`k8s/README.md`](k8s/README.md) for a
 > reference deployment plus first-run SMS/CAPTCHA delivery via `kubectl`.
-
+>
 > **Using a coding agent (Claude Code, opencode, codex, …)?** This repo
 > ships an agent skill at [`skills/futu-opend/SKILL.md`](skills/futu-opend/SKILL.md)
 > that orchestrates install, 2FA delivery, and day-2 ops (restart,

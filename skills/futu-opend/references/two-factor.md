@@ -100,7 +100,7 @@ docker cp futu-opend:/home/futu/.com.futunn.FutuOpenD/F3CNN/PicVerifyCode.png ./
 echo "input_pic_verify_code -code=<CHARS>" | telnet localhost 22222
 ```
 
-### Kubernetes
+### Kubernetes (kubectl cp)
 
 ```bash
 POD=$(kubectl -n futu-opend get pod -l app=futu-opend -o jsonpath='{.items[0].metadata.name}')

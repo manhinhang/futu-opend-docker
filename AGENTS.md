@@ -51,25 +51,25 @@ Docker containerization for Futu OpenD — a trading API gateway for Futu Securi
 
 ## WHERE TO LOOK
 
-| Task                   | Location                                                          | Notes                                                                                        |
-| ---------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Add build arg          | `Dockerfile` (FUTU_OPEND_VER ARG sites)                           | Default `9.3.5308` is legacy; CI passes explicit value                                       |
-| Modify startup         | `script/start.sh`                                                 | XML sed replacement + MD5 hashing happens here                                               |
-| Change CI triggers     | `.github/workflows/publish.yml`                                   | Matrix: BASE_IMG × VERSION → GHCR                                                            |
-| Update config template | `FutuOpenD.xml`                                                   | Placeholders: `<api_port>`, `<login_pwd_md5>`, etc.                                          |
-| Version detection      | `script/check_version.js`                                         | Scraper with retry, timeout, validation                                                      |
-| Run unit tests         | `script/check_version.test.js`                                    | `npm run test:unit`                                                                          |
-| Run e2e suite          | `script/e2e.test.mjs`                                             | `npm run test:e2e`; needs creds + `futu.pem` (see docs/E2E.md)                               |
-| Run k8s e2e            | `script/e2e.k8s.test.mjs`                                         | `npm run test:k8s` (kind = manifest-only) or `K8S_E2E_BACKEND=existing npm run test:k8s`     |
-| Deploy on k8s          | `k8s/`                                                            | `kubectl apply -k k8s/`; SMS/CAPTCHA flow at [k8s/README.md](k8s/README.md)                  |
-| Compose helpers (Node) | `script/lib/docker.mjs`                                           | `composeUp`, `sendTelnetCommand`, `tailLogs`, `inspectHealth`                                |
-| K8s helpers (Node)     | `script/lib/k8s.mjs`                                              | `createKindCluster`, `kindLoadImage`, `tailKubectlLogs`, `startPortForward`                  |
-| Enable WebSocket       | `script/start.sh` (websocket section)                             | Set `FUTU_OPEND_WEBSOCKET_PORT` (default disabled)                                           |
-| Persist login session  | `docker-compose.yaml` `futu-opend-data`                           | Mounted at `/home/futu/.com.futunn.FutuOpenD`                                                |
-| Tweak compose env      | `.env` (auto-loaded; copy from `.env.example`) / `.env.e2e` (e2e) | `FUTU_OPEND_VER` mirrors `opend_version.json` stable                                         |
-| Add npm script         | `package.json`                                                    | Currently `test:unit`, `test:e2e`                                                            |
-| Download manually      | `bash script/download_futu_opend.sh <tarball>`                    | Single positional arg, e.g. `Futu_OpenD_10.4.6408_Ubuntu18.04.tar.gz`; retries 3× internally |
-| Drive install / day-2 ops via an agent | `skills/futu-opend/SKILL.md`                              | Agent-neutral runbook: install + 2FA + restart/re-login/version-bump/teardown for compose/`docker run`/k8s |
+| Task                                   | Location                                                          | Notes                                                                                                      |
+| -------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Add build arg                          | `Dockerfile` (FUTU_OPEND_VER ARG sites)                           | Default `9.3.5308` is legacy; CI passes explicit value                                                     |
+| Modify startup                         | `script/start.sh`                                                 | XML sed replacement + MD5 hashing happens here                                                             |
+| Change CI triggers                     | `.github/workflows/publish.yml`                                   | Matrix: BASE_IMG × VERSION → GHCR                                                                          |
+| Update config template                 | `FutuOpenD.xml`                                                   | Placeholders: `<api_port>`, `<login_pwd_md5>`, etc.                                                        |
+| Version detection                      | `script/check_version.js`                                         | Scraper with retry, timeout, validation                                                                    |
+| Run unit tests                         | `script/check_version.test.js`                                    | `npm run test:unit`                                                                                        |
+| Run e2e suite                          | `script/e2e.test.mjs`                                             | `npm run test:e2e`; needs creds + `futu.pem` (see docs/E2E.md)                                             |
+| Run k8s e2e                            | `script/e2e.k8s.test.mjs`                                         | `npm run test:k8s` (kind = manifest-only) or `K8S_E2E_BACKEND=existing npm run test:k8s`                   |
+| Deploy on k8s                          | `k8s/`                                                            | `kubectl apply -k k8s/`; SMS/CAPTCHA flow at [k8s/README.md](k8s/README.md)                                |
+| Compose helpers (Node)                 | `script/lib/docker.mjs`                                           | `composeUp`, `sendTelnetCommand`, `tailLogs`, `inspectHealth`                                              |
+| K8s helpers (Node)                     | `script/lib/k8s.mjs`                                              | `createKindCluster`, `kindLoadImage`, `tailKubectlLogs`, `startPortForward`                                |
+| Enable WebSocket                       | `script/start.sh` (websocket section)                             | Set `FUTU_OPEND_WEBSOCKET_PORT` (default disabled)                                                         |
+| Persist login session                  | `docker-compose.yaml` `futu-opend-data`                           | Mounted at `/home/futu/.com.futunn.FutuOpenD`                                                              |
+| Tweak compose env                      | `.env` (auto-loaded; copy from `.env.example`) / `.env.e2e` (e2e) | `FUTU_OPEND_VER` mirrors `opend_version.json` stable                                                       |
+| Add npm script                         | `package.json`                                                    | Currently `test:unit`, `test:e2e`                                                                          |
+| Download manually                      | `bash script/download_futu_opend.sh <tarball>`                    | Single positional arg, e.g. `Futu_OpenD_10.4.6408_Ubuntu18.04.tar.gz`; retries 3× internally               |
+| Drive install / day-2 ops via an agent | `skills/futu-opend/SKILL.md`                                      | Agent-neutral runbook: install + 2FA + restart/re-login/version-bump/teardown for compose/`docker run`/k8s |
 
 ## CONVENTIONS
 
