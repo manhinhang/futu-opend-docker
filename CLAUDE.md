@@ -53,7 +53,7 @@ echo 123456 > /tmp/futu-sms-code
 2. **`script/start.sh`** — runtime brain. `sed`-templates `FutuOpenD.xml` (placeholders like `<api_port>`, `<rsa_private_key>`), MD5-hashes `FUTU_ACCOUNT_PWD` if `FUTU_ACCOUNT_PWD_MD5` is unset (and emits a stderr deprecation warning when only the plaintext is set), conditionally enables WebSocket when `FUTU_OPEND_WEBSOCKET_PORT` is set, then launches `/bin/FutuOpenD -cfg_file=/tmp/FutuOpenD.xml` as a child process (no `exec` builtin — bash stays as PID 1, which means signals to the container are not forwarded to FutuOpenD).
 3. **`docker-compose.yaml`** — `network_mode: host` (mandatory; bridge silently fails) plus the named volume `futu-opend-data` for login session persistence. Healthcheck is a TCP probe on `127.0.0.1:11111` (see gotcha below).
 4. **`script/e2e.test.mjs` + `script/lib/docker.mjs`** — local-only `node:test` e2e suite. 6 assertions, telnet-based 2FA delivery, file-drop fallback for non-TTY runs. Full architecture in [docs/E2E.md](docs/E2E.md).
-5. **`.github/workflows/publish.yml`** — matrix CI (`BASE_IMG` × `FUTU_OPEND_VER`) → GHCR. A `dorny/paths-filter` step skips the build when changes are limited to `README.md`, `LICENSE`, `.github/workflows/check-ver-update.yml`, or `.github/workflows/lint.yml`.
+5. **`.github/workflows/publish.yml`** — matrix CI (`BASE_IMG` × `FUTU_OPEND_VER` × `RUNNER`) → GHCR. The `RUNNER` axis (`ubuntu-latest`, `ubuntu-24.04-arm`) validates the healthcheck on both x86 and arm64 (the arm64 job runs the amd64 image under QEMU); only the x86 runner pushes. A `dorny/paths-filter` step skips the build when changes are limited to `README.md`, `LICENSE`, `.github/workflows/check-ver-update.yml`, or `.github/workflows/lint.yml`.
 
 ## Critical gotchas
 

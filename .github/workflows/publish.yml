@@ -60,14 +60,16 @@ jobs:
             }
             return {
                 "BASE_IMG": ["ubuntu", "centos"],
-                "FUTU_OPEND_VER": versions
+                "FUTU_OPEND_VER": versions,
+                "RUNNER": ["ubuntu-latest", "ubuntu-24.04-arm"]
             };
 
   build:
     strategy:
+      fail-fast: false
       matrix: ${{ fromJSON(needs.extract-version.outputs.matrix) }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    runs-on: ${{ matrix.RUNNER }}
+    timeout-minutes: 30
     needs: [extract-version]
     env:
       IMAGE_NAME: ghcr.io/${{ github.repository }}
@@ -75,6 +77,15 @@ jobs:
       STABLE_VERSION: ${{ needs.extract-version.outputs.stable_version }}
     steps:
       - uses: actions/checkout@v4
+
+      # FutuOpenD ships an x86_64-only binary, so the image is always
+      # linux/amd64. On arm64 runners QEMU lets that image build and run
+      # under emulation, validating the healthcheck on both architectures.
+      - name: Set up QEMU
+        if: runner.arch == 'ARM64'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64
 
       - name: Docker login
         uses: docker/login-action@v3
@@ -100,6 +111,7 @@ jobs:
         with:
           push: false
           load: true
+          platforms: linux/amd64
           target: final-${{ matrix.BASE_IMG }}-target
           build-args: |
             FUTU_OPEND_VER=${{ matrix.FUTU_OPEND_VER }}
@@ -110,9 +122,10 @@ jobs:
 
       - name: Validate Docker image
         run: |
-          echo "=== Starting container for validation ==="
+          echo "=== Starting container for validation (runner arch: ${{ runner.arch }}) ==="
           docker run -d \
             --name futu-opend-test \
+            --platform linux/amd64 \
             -e FUTU_ACCOUNT_ID="" \
             -e FUTU_ACCOUNT_PWD_MD5="" \
             ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ matrix.FUTU_OPEND_VER }}
@@ -130,9 +143,10 @@ jobs:
           # Give process time to start
           sleep 5
 
-          # Check if process started (validates binary works)
+          # Check if process started (validates binary works). Allow extra
+          # time on arm64 runners where the amd64 binary runs under QEMU.
           echo "Checking if FutuOpenD process started..."
-          if timeout 10s sh -c 'until docker exec futu-opend-test pgrep FutuOpenD 2>/dev/null; do sleep 1; done'; then
+          if timeout 30s sh -c 'until docker exec futu-opend-test pgrep FutuOpenD 2>/dev/null; do sleep 1; done'; then
             echo "✓ FutuOpenD process started successfully"
             PROCESS_STARTED=true
           else
@@ -174,7 +188,10 @@ jobs:
             exit 1
           fi
 
+      # Push only from the x86 runner — the image is identical on both, and
+      # the arm64 job exists solely to validate the healthcheck under emulation.
       - name: Push Docker image
+        if: runner.arch == 'X64'
         run: |
           docker push ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ matrix.FUTU_OPEND_VER }}
           docker push ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ steps.tag_suffix.outputs.result }}
