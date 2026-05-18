@@ -179,7 +179,7 @@ cp .env.example .env
 | FUTU_ACCOUNT_ID           | Futu account ID                                                                                                                                                  |
 | FUTU_ACCOUNT_PWD_MD5      | **Preferred.** Futu account password MD5 hash. Compute with `echo -n '<pwd>' \| md5sum \| awk '{print $1}'`.                                                     |
 | FUTU_ACCOUNT_PWD          | **Deprecated.** Plaintext password — hashed at runtime by `start.sh`; ignored if `FUTU_ACCOUNT_PWD_MD5` is set. Triggers a stderr deprecation warning when used. |
-| FUTU_OPEND_IP             | OpenD bind address inside the container (default: `127.0.0.1`). Avoid `0.0.0.0` — it exposes OpenD on every interface.                                            |
+| FUTU_OPEND_IP             | OpenD bind address inside the container (default: `127.0.0.1`). Avoid `0.0.0.0` — it exposes OpenD on every interface.                                           |
 | FUTU_OPEND_PORT           | Futu OpenD API Port in container (default: 11111)                                                                                                                |
 | FUTU_OPEND_TELNET_PORT    | Futu OpenD Telnet Port (default: 22222)                                                                                                                          |
 | FUTU_OPEND_LANG           | OpenD language: `en` or `chs` (default: `chs`)                                                                                                                   |

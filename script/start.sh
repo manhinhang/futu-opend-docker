@@ -39,7 +39,7 @@ else
   WEBSOCKET_CONFIG=""
 fi
 
-cat > "$FUTU_OPEND_XML_PATH" <<EOF
+cat >"$FUTU_OPEND_XML_PATH" <<EOF
 <futu_opend>
 	<ip>$FUTU_OPEND_IP</ip>
 	<api_port>$FUTU_OPEND_PORT</api_port>
