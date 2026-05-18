@@ -65,6 +65,7 @@ echo 123456 > /tmp/futu-sms-code
 - **`FUTU_ACCOUNT_PWD` is deprecated; use `FUTU_ACCOUNT_PWD_MD5`.** `start.sh` still accepts plaintext as a legacy fallback (it MD5-hashes at runtime) but emits a stderr `WARNING: FUTU_ACCOUNT_PWD is deprecated…` when only the plaintext is set. `FUTU_ACCOUNT_PWD_MD5` takes priority when both are set.
 - **Avoid `docker compose config` and `docker exec <container> env`** — both leak `FUTU_ACCOUNT_PWD` in plaintext (and `FUTU_ACCOUNT_PWD_MD5` if set, though the hash is less catastrophic than the original).
 - **Futu rate-limits rapid login retries.** Wait 30+ minutes between aggressive debug cycles; rate-limit messages look identical to network errors.
+- **No native arm64 image.** FutuOpenD ships as an x86_64-only binary; the image is always `linux/amd64`. On arm64 hosts it runs via QEMU/Rosetta emulation — `docker-compose.yaml` pins `platform: linux/amd64`, and `docker run` / `docker build` users pass `--platform linux/amd64`. Do not add an arm64 build target until Futu publishes an aarch64 tarball.
 
 ## Pointers
 
