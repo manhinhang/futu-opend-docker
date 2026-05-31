@@ -21,6 +21,12 @@ lightweight futu opend docker
 docker pull ghcr.io/manhinhang/futu-opend-docker:ubuntu-stable
 ```
 
+> **arm64 / Apple Silicon hosts**: FutuOpenD is an x86_64-only binary —
+> Futu publishes no native ARM64 build. The image still runs on arm64
+> hosts (Apple Silicon Macs, ARM servers) through Docker's amd64
+> emulation (QEMU/Rosetta). Add `--platform linux/amd64` to `docker pull`
+> / `docker run`; the compose file already pins `platform: linux/amd64`.
+
 ## container tags pattern
 
 | Base Image | Tags                   |
@@ -44,6 +50,7 @@ docker pull ghcr.io/manhinhang/futu-opend-docker:ubuntu-stable
 # Compute the password MD5 so plaintext never lands in your shell history.
 FUTU_ACCOUNT_PWD_MD5=$(echo -n '<your_password>' | md5sum | awk '{print $1}')
 
+# On an arm64 host, add: --platform linux/amd64
 docker run -it --name futu-opend-docker \
 -e FUTU_ACCOUNT_ID=<your_account_id> \
 -e FUTU_ACCOUNT_PWD_MD5="$FUTU_ACCOUNT_PWD_MD5" \
@@ -287,6 +294,10 @@ echo "input_pic_verify_code -code=<CAPTCHA_CODE>" | telnet localhost 22222
 ## Build locally
 
 > **Note**: Ubuntu builds require version 9.4.x or later with Ubuntu 18.04 base image. Ubuntu 16.04 builds are no longer provided by Futu.
+>
+> **arm64 hosts**: pass `--platform linux/amd64` to `docker build` — the
+> FutuOpenD binary is x86_64-only, so the image is always amd64 and runs
+> under emulation on ARM.
 
 - Use ubuntu as base image
 
