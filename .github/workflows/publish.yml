@@ -3,6 +3,8 @@ name: Publish Docker image
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
@@ -175,6 +177,25 @@ jobs:
           fi
 
       - name: Push Docker image
+        if: github.event_name == 'push'
         run: |
           docker push ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ matrix.FUTU_OPEND_VER }}
           docker push ${{ env.IMAGE_NAME }}:${{ matrix.BASE_IMG }}-${{ steps.tag_suffix.outputs.result }}
+
+  # Stable-named aggregation check so branch protection has a fixed required context.
+  # The matrix `build` job names embed the version (which changes every bump), so they
+  # cannot be pinned as required checks; this gate can.
+  build-gate:
+    if: always()
+    needs: [check-paths, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify build outcome
+        run: |
+          # build is "skipped" for docs-only changes (should-build=false) — treat as pass
+          if [ "${{ needs.build.result }}" = "failure" ] || \
+             [ "${{ needs.build.result }}" = "cancelled" ]; then
+            echo "Build failed (result: ${{ needs.build.result }})"
+            exit 1
+          fi
+          echo "Build passed or skipped (result: ${{ needs.build.result }})"
