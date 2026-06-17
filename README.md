@@ -291,13 +291,13 @@ echo "input_pic_verify_code -code=<CAPTCHA_CODE>" | telnet localhost 22222
 - Use ubuntu as base image
 
 ```bash
-docker build -t futu-opend-docker --build-arg FUTU_OPEND_VER=10.7.6718 --build-arg BASE_IMG=ubuntu .
+docker build -t futu-opend-docker --build-arg FUTU_OPEND_VER=10.7.6728 --build-arg BASE_IMG=ubuntu .
 ```
 
 - Use centos as base image
 
 ```bash
-docker build -t futu-opend-docker --build-arg FUTU_OPEND_VER=10.7.6718 --build-arg BASE_IMG=centos .
+docker build -t futu-opend-docker --build-arg FUTU_OPEND_VER=10.7.6728 --build-arg BASE_IMG=centos .
 ```
 
 ## Troubleshooting
