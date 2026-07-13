@@ -107,18 +107,18 @@ Docker containerization for Futu OpenD — a trading API gateway for Futu Securi
 
 ## VERSIONS & PORTS
 
-| Fact                        | Value                                  | Source of truth                                |
-| --------------------------- | -------------------------------------- | ---------------------------------------------- | --------------------------- |
-| Stable OpenD                | 10.8.6818                              | `opend_version.json`                           | <!-- futu-opend-version --> |
-| Beta OpenD                  | null                                   | `opend_version.json`                           |
-| Build-arg default           | 9.3.5308                               | `Dockerfile` (legacy default; CI passes value) |
-| `.env.example` default      | 10.8.6818                              | `.env.example` (mirrors stable on bumps)       | <!-- futu-opend-version --> |
-| Runtime base (Ubuntu)       | `ubuntu:18.04` (bionic, binary compat) | `Dockerfile`                                   |
-| Build base (Ubuntu)         | `ubuntu:22.04` (jammy, apt works)      | `Dockerfile`                                   |
-| Runtime/build base (CentOS) | `centos:centos7`                       | `Dockerfile`                                   |
-| API port                    | 11111                                  | env `FUTU_OPEND_PORT`                          |
-| Telnet/2FA port             | 22222                                  | env `FUTU_OPEND_TELNET_PORT`                   |
-| WebSocket port (optional)   | 33333 (e2e default; opt-in)            | env `FUTU_OPEND_WEBSOCKET_PORT`                |
+| Fact                        | Value                                  | Source of truth                                                      |
+| --------------------------- | -------------------------------------- | -------------------------------------------------------------------- |
+| Stable OpenD                | 10.8.6818                              | `opend_version.json` <!-- futu-opend-version -->                     |
+| Beta OpenD                  | null                                   | `opend_version.json`                                                 |
+| Build-arg default           | 9.3.5308                               | `Dockerfile` (legacy default; CI passes value)                       |
+| `.env.example` default      | 10.8.6818                              | `.env.example` (mirrors stable on bumps) <!-- futu-opend-version --> |
+| Runtime base (Ubuntu)       | `ubuntu:18.04` (bionic, binary compat) | `Dockerfile`                                                         |
+| Build base (Ubuntu)         | `ubuntu:22.04` (jammy, apt works)      | `Dockerfile`                                                         |
+| Runtime/build base (CentOS) | `centos:centos7`                       | `Dockerfile`                                                         |
+| API port                    | 11111                                  | env `FUTU_OPEND_PORT`                                                |
+| Telnet/2FA port             | 22222                                  | env `FUTU_OPEND_TELNET_PORT`                                         |
+| WebSocket port (optional)   | 33333 (e2e default; opt-in)            | env `FUTU_OPEND_WEBSOCKET_PORT`                                      |
 
 ## E2E TEST HARNESS
 
