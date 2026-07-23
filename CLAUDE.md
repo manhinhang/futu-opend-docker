@@ -11,12 +11,12 @@ Docker container for **FutuOpenD** — Futu Securities' trading API gateway. Mul
 ```bash
 # Build locally (Ubuntu runtime — default)
 docker build -t futu-opend-docker \
-  --build-arg FUTU_OPEND_VER=10.9.6908 \
+  --build-arg FUTU_OPEND_VER=10.9.6918 \
   --target final-ubuntu-target .
 
 # Build locally (CentOS runtime)
 docker build -t futu-opend-docker \
-  --build-arg FUTU_OPEND_VER=10.9.6908 \
+  --build-arg FUTU_OPEND_VER=10.9.6918 \
   --target final-centos-target .
 
 # Run with compose (auto-loads .env — copy from .env.example first — plus ./futu.pem)
@@ -37,7 +37,7 @@ npm run test:e2e
 node script/check_version.js
 
 # Manually fetch the FutuOpenD tarball
-bash script/download_futu_opend.sh Futu_OpenD_10.9.6908_Ubuntu18.04.tar.gz
+bash script/download_futu_opend.sh Futu_OpenD_10.9.6918_Ubuntu18.04.tar.gz
 
 # Deliver SMS 2FA via telnet (preferred for automation; `docker attach` is the
 # interactive alternative — see README Method 1)
