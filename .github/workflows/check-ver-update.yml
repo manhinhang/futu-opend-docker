@@ -28,6 +28,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install pre-commit
+        run: pip install pre-commit
+
       - name: Check Futu OpenD Version
         run: node script/check_version.js
 
@@ -59,6 +62,18 @@ jobs:
 
           git checkout -b "$BRANCH"
           git add $SYNC_FILES
+
+          # The sync script rewrites version literals in place, so a bump that
+          # changes string length (10.9.6918 -> 10.10.7008) leaves markdown
+          # tables misaligned and the Lint workflow's prettier hook rejects the
+          # generated PR. Reformat with the same hooks that gate CI. Files must
+          # be staged first: pre-commit stashes unstaged changes and would drop
+          # the sync entirely. The first pass exits non-zero when it rewrites
+          # files; the second has to pass or the job fails without opening a PR.
+          pre-commit run --files $SYNC_FILES || true
+          git add $SYNC_FILES
+          pre-commit run --files $SYNC_FILES
+
           git commit -m "Update Futu OpenD version"
           git push origin "$BRANCH"
 
