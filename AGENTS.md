@@ -17,7 +17,6 @@ Docker containerization for Futu OpenD — a trading API gateway for Futu Securi
 .
 ├── Dockerfile              # Multi-stage build (final-ubuntu-target / final-centos-target)
 ├── docker-compose.yaml     # Local dev compose (host net + futu-opend-data volume)
-├── FutuOpenD.xml           # Config template (sed-replaced at runtime)
 ├── opend_version.json      # Version tracking (auto-updated by CI)
 ├── package.json            # npm scripts: test:unit, test:e2e (jsdom dep)
 ├── .env.example            # Tracked template — `cp .env.example .env`, then fill in creds (.env is gitignored)
@@ -36,7 +35,7 @@ Docker containerization for Futu OpenD — a trading API gateway for Futu Securi
 │       ├── SKILL.md        # Entry point with YAML frontmatter; load this first
 │       └── references/     # Per-target / per-task detail pulled in on demand
 ├── script/
-│   ├── start.sh            # Entrypoint — replaces XML placeholders, MD5s password
+│   ├── start.sh            # Entrypoint — generates FutuOpenD.xml from env vars, MD5s password
 │   ├── download_futu_opend.sh  # Downloads FutuOpenD tarball (3 attempts total, fixed 2 s delay between retries)
 │   ├── check_version.js    # Version scraper with retry, timeout, validation
 │   ├── check_version.test.js   # Unit tests (node:test, CJS)
@@ -54,9 +53,9 @@ Docker containerization for Futu OpenD — a trading API gateway for Futu Securi
 | Task                                   | Location                                                          | Notes                                                                                                      |
 | -------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | Add build arg                          | `Dockerfile` (FUTU_OPEND_VER ARG sites)                           | Default `9.3.5308` is legacy; CI passes explicit value                                                     |
-| Modify startup                         | `script/start.sh`                                                 | XML sed replacement + MD5 hashing happens here                                                             |
+| Modify startup                         | `script/start.sh`                                                 | XML generation (heredoc) + MD5 hashing happens here                                                        |
 | Change CI triggers                     | `.github/workflows/publish.yml`                                   | Matrix: BASE_IMG × VERSION → GHCR                                                                          |
-| Update config template                 | `FutuOpenD.xml`                                                   | Placeholders: `<api_port>`, `<login_pwd_md5>`, etc.                                                        |
+| Change OpenD config                    | `script/start.sh`                                                 | `FutuOpenD.xml` is generated from env vars by the heredoc — no template file                               |
 | Version detection                      | `script/check_version.js`                                         | Scraper with retry, timeout, validation                                                                    |
 | Run unit tests                         | `script/check_version.test.js`                                    | `npm run test:unit`                                                                                        |
 | Run e2e suite                          | `script/e2e.test.mjs`                                             | `npm run test:e2e`; needs creds + `futu.pem` (see docs/E2E.md)                                             |
@@ -75,7 +74,7 @@ Docker containerization for Futu OpenD — a trading API gateway for Futu Securi
 
 - **Multi-stage Docker**: `final-ubuntu-target` / `final-centos-target` selected by build `--target`; the unparameterised `final` alias defaults to Ubuntu. The `BASE_IMG` build arg is declared but no longer routes between targets — pass `--target` explicitly.
 - **Non-root user**: All images run as `futu` user (created at build).
-- **Env var injection**: `FUTU_ACCOUNT_ID`, `FUTU_ACCOUNT_PWD_MD5` (preferred), `FUTU_ACCOUNT_PWD` (deprecated; legacy fallback), `FUTU_OPEND_RSA_FILE_PATH`, `FUTU_OPEND_IP`, `FUTU_OPEND_PORT` (11111), `FUTU_OPEND_TELNET_PORT` (22222), `FUTU_OPEND_WEBSOCKET_PORT` / `FUTU_OPEND_WEBSOCKET_IP` (optional).
+- **Env var injection**: `FUTU_ACCOUNT_ID`, `FUTU_ACCOUNT_PWD_MD5` (preferred), `FUTU_ACCOUNT_PWD` (deprecated; legacy fallback), `FUTU_OPEND_RSA_FILE_PATH`, `FUTU_OPEND_IP` (127.0.0.1), `FUTU_OPEND_PORT` (11111), `FUTU_OPEND_TELNET_PORT` (22222), `FUTU_OPEND_LANG` (chs), `FUTU_OPEND_LOG_LEVEL` (info), `FUTU_OPEND_WEBSOCKET_PORT` / `FUTU_OPEND_WEBSOCKET_IP` (optional). `start.sh` builds the whole `FutuOpenD.xml` from these — there is no template file.
 - **Password hashing**: `FUTU_ACCOUNT_PWD_MD5` consumed directly. If unset, `start.sh` MD5-hashes `FUTU_ACCOUNT_PWD` at runtime and emits a stderr deprecation warning.
 - **Version tracking**: `opend_version.json` updated by scheduled CI; triggers PR on change.
 - **ESM boundary**: e2e code is `.mjs` (ESM); `check_version.test.js` stays CJS. Don't add `"type": "module"` to `package.json` until that migrates.
@@ -85,7 +84,8 @@ Docker containerization for Futu OpenD — a trading API gateway for Futu Securi
 
 - **NEVER** run containers as root — `USER futu` enforced.
 - **NEVER** hardcode credentials — use env vars or your local (gitignored) `.env` file. The tracked `.env.example` template must stay credential-free.
-- **NEVER** modify `FutuOpenD.xml` directly — it's a template; changes are overwritten by `sed` at runtime.
+- **NEVER** add a `FutuOpenD.xml` to the image — the config is generated at runtime by `start.sh`; edit the heredoc there instead.
+- **NEVER** default a bind address to `0.0.0.0` — it exposes OpenD on every interface. Keep `127.0.0.1` unless the user explicitly needs wider exposure.
 - **NEVER** skip RSA key — required for API encryption.
 - **NEVER** swap `network_mode: host` for bridge — silent login failure (`>>>登录失败,网络异常` ~45 s in). See [CLAUDE.md](CLAUDE.md) gotchas.
 - **NEVER** ship `futu.pem` at mode `0600` to users — runtime UID mismatch breaks RSA. `docs/E2E.md` calls out 0644 explicitly (the README is silent on file mode).
@@ -95,7 +95,7 @@ Docker containerization for Futu OpenD — a trading API gateway for Futu Securi
 
 ## UNIQUE STYLES
 
-- **XML templating**: `sed -i` replaces placeholder patterns in `FutuOpenD.xml` at container start.
+- **XML generation**: `start.sh` writes `/tmp/FutuOpenD.xml` from a heredoc at container start, interpolating env vars; telnet and WebSocket blocks are conditionally included.
 - **Dual base images**: Ubuntu 18.04 (bionic, runtime) / CentOS 7 (runtime); build stages on Ubuntu 22.04 / CentOS 7 — bionic apt is bypassed for build reliability.
 - **Healthcheck split**: The Dockerfile-shipped healthcheck is `pgrep FutuOpenD` (works). The compose override is a TCP probe on `127.0.0.1:11111`, which is misconfigured (loopback vs. hostname bind) and stays in `starting` — see [CLAUDE.md](CLAUDE.md) gotchas.
 - **2FA flow**: SMS code delivery — telnet to port `22222` (preferred), `docker attach` interactive (`input_phone_verify_code -code=XXXXXX`), or e2e file-drop at `/tmp/futu-sms-code` for non-TTY runs. K8s equivalents — `kubectl port-forward` + telnet, or `kubectl exec ... -- bash -c 'printf "...\r\n" > /dev/tcp/127.0.0.1/22222'`. See [k8s/README.md](k8s/README.md) "First-run login".
