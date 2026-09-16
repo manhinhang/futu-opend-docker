@@ -85,6 +85,11 @@ spec:
                   name: futu-credentials
                   key: FUTU_ACCOUNT_PWD
                   optional: true
+            # Uncomment to log in with the password FutuOpenD remembered during
+            # an earlier interactive login (OpenD 10.10+). FUTU_ACCOUNT_ID is
+            # still required; the password keys above become unnecessary.
+            # - name: FUTU_OPEND_LOGIN_BY_REMEMBER
+            #   value: "1"
             - name: FUTU_OPEND_RSA_FILE_PATH
               value: /.futu/futu.pem
             - name: FUTU_OPEND_IP
