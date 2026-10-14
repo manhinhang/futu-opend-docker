@@ -179,11 +179,13 @@ cp .env.example .env
 | FUTU_ACCOUNT_ID           | Futu account ID                                                                                                                                                  |
 | FUTU_ACCOUNT_PWD_MD5      | **Preferred.** Futu account password MD5 hash. Compute with `echo -n '<pwd>' \| md5sum \| awk '{print $1}'`.                                                     |
 | FUTU_ACCOUNT_PWD          | **Deprecated.** Plaintext password — hashed at runtime by `start.sh`; ignored if `FUTU_ACCOUNT_PWD_MD5` is set. Triggers a stderr deprecation warning when used. |
-| FUTU_OPEND_IP             | OpenD bind address inside the container (default: `0.0.0.0`)                                                                                                     |
+| FUTU_OPEND_IP             | OpenD bind address inside the container (default: `127.0.0.1`). Avoid `0.0.0.0` — it exposes OpenD on every interface.                                           |
 | FUTU_OPEND_PORT           | Futu OpenD API Port in container (default: 11111)                                                                                                                |
 | FUTU_OPEND_TELNET_PORT    | Futu OpenD Telnet Port (default: 22222)                                                                                                                          |
+| FUTU_OPEND_LANG           | OpenD language: `en` or `chs` (default: `chs`)                                                                                                                   |
+| FUTU_OPEND_LOG_LEVEL      | OpenD log level: `no`, `debug`, `info`, `warning`, `error`, `fatal` (default: `info`)                                                                            |
 | FUTU_OPEND_WEBSOCKET_PORT | Enable WebSocket listener on this port (default: disabled).                                                                                                      |
-| FUTU_OPEND_WEBSOCKET_IP   | WebSocket bind address (default: 0.0.0.0 when FUTU_OPEND_WEBSOCKET_PORT is set, else not applied)                                                                |
+| FUTU_OPEND_WEBSOCKET_IP   | WebSocket bind address (default: `127.0.0.1` when FUTU_OPEND_WEBSOCKET_PORT is set, else not applied)                                                            |
 | FUTU_OPEND_VER            | OpenD version to build (compose `build.args`). Defaulted in `.env.example`; mirrors `opend_version.json`.                                                        |
 
 > **Note**: the compose file uses `network_mode: host` (and `build.network: host`) so the container shares the host's network stack. No `ports:` mapping is needed; OpenD's listeners bind directly on the host. This avoids docker-bridge connectivity issues we hit with Futu's auth servers.
