@@ -166,3 +166,48 @@ kubectl -n futu-opend rollout restart deployment/futu-opend
 
 If you switched `FUTU_ACCOUNT_ID`, also wipe the data volume (see "Wipe
 session") — the cached whitelist is account-bound.
+
+In `remember` mode there is no stored password to rotate: change it in the
+Futu app, then redo the interactive login below.
+
+## Switch to login-by-remember
+
+OpenD 10.10+ can log in with the password it remembered during an earlier
+interactive login, so no password material has to sit in `.env` / the
+Secret. Two steps — the first one needs a TTY and the user at the keyboard.
+
+**1. One-time interactive login.** Start with `FUTU_ACCOUNT_ID` only (no
+`FUTU_ACCOUNT_PWD_MD5` / `FUTU_ACCOUNT_PWD`), attach, and let the user
+answer the prompts — including _yes_ to remembering the password. Phone
+accounts are entered as `+<country code> <phone number>`.
+
+Run it in the foreground — `docker attach` on an already-detached
+container does not reliably deliver stdin on this image.
+
+```bash
+# compose: comment the password lines out of .env, then:
+docker compose run --rm futu-opend
+# docker run: see README "Login modes" for the `docker run -it --rm` invocation.
+# k8s: kubectl -n futu-opend attach -it deployment/futu-opend
+#      (or do the interactive login locally and copy the data volume).
+```
+
+Never type the password yourself — hand the prompt to the user.
+
+**2. Re-launch in remember mode.**
+
+```bash
+# compose: set FUTU_OPEND_LOGIN_BY_REMEMBER=1 in .env, then:
+docker compose up -d --force-recreate
+# k8s: uncomment the FUTU_OPEND_LOGIN_BY_REMEMBER env entry in
+# k8s/deployment.yaml, then: kubectl -n futu-opend rollout restart deployment/futu-opend
+```
+
+Confirm with `FUTU_OPEND_LOGIN_MODE: remember` in the startup logs.
+
+Caveats:
+
+- The remembered password lives in the data volume. "Wipe session" above
+  discards it — the interactive step has to be repeated afterwards.
+- `FUTU_ACCOUNT_ID` stays required; the container exits immediately
+  without it. Password vars, if left set, are ignored with a stderr note.

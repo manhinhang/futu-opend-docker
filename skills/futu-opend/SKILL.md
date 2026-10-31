@@ -108,7 +108,18 @@ Hard rules:
   both leak `FUTU_ACCOUNT_PWD` and (less catastrophically) the MD5 hash.
 - Prefer `FUTU_ACCOUNT_PWD_MD5` everywhere. The plaintext form is a
   deprecated legacy fallback and `start.sh` emits a stderr warning when
-  only the plaintext is set (see `script/start.sh:6-11`).
+  only the plaintext is set (see the login-mode block at the top of
+  `script/start.sh`).
+
+If the user would rather keep the password out of the environment
+entirely, OpenD 10.10+ can replay a password it remembered during an
+earlier interactive login. Set `FUTU_OPEND_LOGIN_BY_REMEMBER=1` with
+`FUTU_ACCOUNT_ID` and no password vars; `start.sh` then launches
+`FutuOpenD -login_account=<id> -login_by_remember=1`. It needs a one-time
+interactive login first — see `references/operations.md` ("Switch to
+login-by-remember") and README "Login modes". Startup logs
+`FUTU_OPEND_LOGIN_MODE: password|remember|interactive`, which is the
+quickest way to confirm which mode is live.
 
 ### 5. Materialize config and bring it up
 

@@ -166,6 +166,78 @@ read -p "Enter CAPTCHA code: " captcha_code
 } | telnet localhost 22222
 ```
 
+## Login modes
+
+FutuOpenD 10.10 added an interactive login mode: started with no credentials
+it prompts for account and password on stdin, and offers to remember the
+password. `start.sh` picks one of three modes from the environment:
+
+| Mode            | Selected by                                                   | What happens                                                                     |
+| --------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| **password**    | `FUTU_ACCOUNT_PWD_MD5` (or the deprecated `FUTU_ACCOUNT_PWD`) | Credentials are templated into the config — the default, unattended behaviour.   |
+| **remember**    | `FUTU_OPEND_LOGIN_BY_REMEMBER=1` (+ `FUTU_ACCOUNT_ID`)        | Runs `FutuOpenD -login_account=<id> -login_by_remember=1`; no password required. |
+| **interactive** | neither of the above                                          | FutuOpenD prompts for account and password on stdin.                             |
+
+The selected mode is echoed at startup as `FUTU_OPEND_LOGIN_MODE: <mode>`.
+
+### Login without a password in the environment
+
+`remember` mode replays the password FutuOpenD itself remembered during an
+earlier interactive login, so no password (not even its MD5) has to be
+passed to the container. It is a two-step setup:
+
+**Step 1 — log in interactively once, and let OpenD remember the password.**
+Run the container in the **foreground** with `FUTU_ACCOUNT_ID` only and no
+password variables, then answer the prompts in that terminal (answer _yes_
+when asked whether to remember the password):
+
+```bash
+# docker run:
+docker run -it --rm \
+  -e FUTU_ACCOUNT_ID=<your_account_id> \
+  -v $(pwd)/futu.pem:/.futu/futu.pem \
+  -v futu-opend-data:/home/futu/.com.futunn.FutuOpenD \
+  ghcr.io/manhinhang/futu-opend-docker
+
+# compose (same service definition, same data volume):
+docker compose run --rm futu-opend
+```
+
+Keep the container in the foreground for this step — stdin is then
+connected directly to your terminal. Attaching to an already-detached
+container (`docker run -d` + `docker attach`) does not reliably deliver
+stdin on this image.
+
+Phone-number accounts are entered as `+<country code> <phone number>` at the
+account prompt. Any SMS code or CAPTCHA can still be answered over telnet —
+see [Input verification codes](#input-verification-codes). Once login
+succeeds the password is remembered in the data volume; stop the container
+(`Ctrl-C`) and move on to step 2.
+
+**Step 2 — restart with `FUTU_OPEND_LOGIN_BY_REMEMBER=1`:**
+
+```bash
+docker run -d --name futu-opend-docker \
+  -e FUTU_ACCOUNT_ID=<your_account_id> \
+  -e FUTU_OPEND_LOGIN_BY_REMEMBER=1 \
+  -v $(pwd)/futu.pem:/.futu/futu.pem \
+  -v futu-opend-data:/home/futu/.com.futunn.FutuOpenD \
+  ghcr.io/manhinhang/futu-opend-docker
+```
+
+Notes:
+
+- The remembered password lives in the `futu-opend-data` volume. Wiping it
+  (`docker compose down -v`) also wipes the remembered password — repeat
+  step 1 afterwards.
+- `FUTU_ACCOUNT_ID` is required in `remember` mode; the container exits with
+  an error if it's missing. `FUTU_ACCOUNT_PWD_MD5` / `FUTU_ACCOUNT_PWD` are
+  ignored (a note is logged to stderr).
+- Only step 1 needs a TTY. Step 2 is fully unattended — `-login_by_remember=1`
+  replays the stored password with no prompt.
+- Compose users: put `FUTU_OPEND_LOGIN_BY_REMEMBER=1` in `.env` and leave
+  `FUTU_ACCOUNT_PWD_MD5` / `FUTU_ACCOUNT_PWD` empty.
+
 ## Run in docker compose
 
 Copy the tracked `.env.example` template to `.env`, then edit it (auto-loaded by `docker compose`):
@@ -174,17 +246,18 @@ Copy the tracked `.env.example` template to `.env`, then edit it (auto-loaded by
 cp .env.example .env
 ```
 
-| Environment Variable      | Description                                                                                                                                                      |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FUTU_ACCOUNT_ID           | Futu account ID                                                                                                                                                  |
-| FUTU_ACCOUNT_PWD_MD5      | **Preferred.** Futu account password MD5 hash. Compute with `echo -n '<pwd>' \| md5sum \| awk '{print $1}'`.                                                     |
-| FUTU_ACCOUNT_PWD          | **Deprecated.** Plaintext password — hashed at runtime by `start.sh`; ignored if `FUTU_ACCOUNT_PWD_MD5` is set. Triggers a stderr deprecation warning when used. |
-| FUTU_OPEND_IP             | OpenD bind address inside the container (default: `0.0.0.0`)                                                                                                     |
-| FUTU_OPEND_PORT           | Futu OpenD API Port in container (default: 11111)                                                                                                                |
-| FUTU_OPEND_TELNET_PORT    | Futu OpenD Telnet Port (default: 22222)                                                                                                                          |
-| FUTU_OPEND_WEBSOCKET_PORT | Enable WebSocket listener on this port (default: disabled).                                                                                                      |
-| FUTU_OPEND_WEBSOCKET_IP   | WebSocket bind address (default: 0.0.0.0 when FUTU_OPEND_WEBSOCKET_PORT is set, else not applied)                                                                |
-| FUTU_OPEND_VER            | OpenD version to build (compose `build.args`). Defaulted in `.env.example`; mirrors `opend_version.json`.                                                        |
+| Environment Variable         | Description                                                                                                                                                                                                                          |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FUTU_ACCOUNT_ID              | Futu account ID                                                                                                                                                                                                                      |
+| FUTU_ACCOUNT_PWD_MD5         | **Preferred.** Futu account password MD5 hash. Compute with `echo -n '<pwd>' \| md5sum \| awk '{print $1}'`.                                                                                                                         |
+| FUTU_ACCOUNT_PWD             | **Deprecated.** Plaintext password — hashed at runtime by `start.sh`; ignored if `FUTU_ACCOUNT_PWD_MD5` is set. Triggers a stderr deprecation warning when used.                                                                     |
+| FUTU_OPEND_LOGIN_BY_REMEMBER | Set to `1` to log in with the password FutuOpenD remembered during an earlier interactive login (`-login_by_remember=1`, OpenD 10.10+). Requires `FUTU_ACCOUNT_ID`; password variables are ignored. See [Login modes](#login-modes). |
+| FUTU_OPEND_IP                | OpenD bind address inside the container (default: `0.0.0.0`)                                                                                                                                                                         |
+| FUTU_OPEND_PORT              | Futu OpenD API Port in container (default: 11111)                                                                                                                                                                                    |
+| FUTU_OPEND_TELNET_PORT       | Futu OpenD Telnet Port (default: 22222)                                                                                                                                                                                              |
+| FUTU_OPEND_WEBSOCKET_PORT    | Enable WebSocket listener on this port (default: disabled).                                                                                                                                                                          |
+| FUTU_OPEND_WEBSOCKET_IP      | WebSocket bind address (default: 0.0.0.0 when FUTU_OPEND_WEBSOCKET_PORT is set, else not applied)                                                                                                                                    |
+| FUTU_OPEND_VER               | OpenD version to build (compose `build.args`). Defaulted in `.env.example`; mirrors `opend_version.json`.                                                                                                                            |
 
 > **Note**: the compose file uses `network_mode: host` (and `build.network: host`) so the container shares the host's network stack. No `ports:` mapping is needed; OpenD's listeners bind directly on the host. This avoids docker-bridge connectivity issues we hit with Futu's auth servers.
 
@@ -315,7 +388,7 @@ If you encounter download failures during build:
 If the container fails to start:
 
 1. **RSA key**: Ensure `futu.pem` exists and is properly mounted at `/.futu/futu.pem`
-2. **Environment variables**: Verify `FUTU_ACCOUNT_ID` and either `FUTU_ACCOUNT_PWD_MD5` (preferred) or the deprecated `FUTU_ACCOUNT_PWD` are set
+2. **Environment variables**: Verify `FUTU_ACCOUNT_ID` and either `FUTU_ACCOUNT_PWD_MD5` (preferred) or the deprecated `FUTU_ACCOUNT_PWD` are set — or, in `remember` mode, that `FUTU_OPEND_LOGIN_BY_REMEMBER=1` and `FUTU_ACCOUNT_ID` are set. The startup log line `FUTU_OPEND_LOGIN_MODE: <mode>` tells you which mode was picked
 3. **Verification required**: First run may require verification codes
 4. **Stale session state**: if you've changed accounts or upgraded OpenD across major versions, wipe the data volume — see [Login session persistence](#login-session-persistence).
 
